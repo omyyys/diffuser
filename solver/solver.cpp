@@ -5,9 +5,15 @@
 #include "../raylib/include/raylib.h"
 #include "solver.hpp"
 
+double constrain(double value, double range_start, double range_end) {
+    value = (value > range_end) ? range_end : value;
+    value = (value < range_start) ? range_start : value;
+
+    return value;
+}
+
 double translate_range(double value, double cur_min, double cur_max, double res_min, double res_max) {
-    value = (value > cur_max) ? cur_max : value;
-    value = (value < cur_min) ? cur_min : value;
+    value = constrain(value, cur_min, cur_max); 
 
     double cur_range = cur_max - cur_min;
     double res_range = res_max - res_min;
@@ -25,16 +31,6 @@ Color get_colour(double dens) {
         .b = 255,
         .a = dens_alpha
     };
-}
-
-void fluid_field_print(double *field, int nx) {
-    for (int i = 0; i < nx; i++) {
-        printf("{ ");
-        for (int j = 0; j < nx; j++) {
-            printf("%f ", field[IX(i, j)]);
-        }
-        printf("}\n");
-    } 
 }
 
 bool double_eq(double a, double b, double eps = 1e-5) {
@@ -205,14 +201,15 @@ void FluidCube::step() {
 }
 
 void FluidCube::add_density(int x, int y, double amount) {
-    density[IX(x, y)] += amount;
+    density[IX(x, y)] = constrain(amount + density[IX(x, y)], 0, 1);
+    
 }
 
 void FluidCube::add_velocity(int x, int y, double amountX, double amountY) {
     int index = IX(x, y);
     
-    Vx[index] += amountX;
-    Vy[index] += amountY;
+    Vx[index] = constrain(amountX + Vx[index], 0, 1);
+    Vy[index] = constrain(amountY + Vy[index], 0, 1);
 }
 
 void FluidCube::render_density(int scale) {
@@ -221,9 +218,19 @@ void FluidCube::render_density(int scale) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double dens = density[IX(i, j)];
-            DrawRectangle(i*scale, j*scale, 3*scale, 3*scale, get_colour(dens));
+            DrawRectangle(i*scale, j*scale, 5*scale, 5*scale, get_colour(dens));
         }
     }
 
     EndDrawing();
+}
+
+void FluidCube::print_density(FILE *f) {
+    for (int i = 0; i < nx; i++) {
+        fprintf(f, "{ ");
+        for (int j = 0; j < nx; j++) {
+            fprintf(f, "%lf ", density[IX(i, j)]);
+        }
+        fprintf(f, "}\n");
+    } 
 }

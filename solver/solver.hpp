@@ -1,3 +1,5 @@
+#include <cstdio>
+
 #define IX(x, y) (x + y*nx)
 
 class FluidCube {
@@ -29,4 +31,5 @@ class FluidCube {
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
     void render_density(int scale);
+    void print_density(FILE *out = stdout);
 };

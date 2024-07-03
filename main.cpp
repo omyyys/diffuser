@@ -7,7 +7,7 @@
     
 int main() {
     const int scale = 10;
-    const int nx = 60;
+    const int nx = 50;
     const int fps = 240;
 
     FluidCube fluid = FluidCube(nx, 0, 0, 1.0/fps);
