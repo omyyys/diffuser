@@ -23,7 +23,7 @@ class FluidCube {
     double *Vx0;
     double *Vy0;
 
-    FluidCube(int _nx, double _diff, double _visc, double _dt); 
+    FluidCube(int _nx, double _diff, double _visc, double _dt);
 
     void set_bnd(int b, double *x);
     void lin_solve(int b, double *x, double *x0, double a, double c);
@@ -35,4 +35,5 @@ class FluidCube {
     void add_velocity(int x, int y, double amountX, double amountY);
     void render_density(int scale, Color colour, float particle_size);
     void print_density(FILE *out = stdout);
+    void reset();
 };

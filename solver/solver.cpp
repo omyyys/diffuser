@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <cmath>
 
 #include "../raylib/include/raylib.h"
@@ -224,4 +225,14 @@ void FluidCube::print_density(FILE *f) {
         }
         fprintf(f, "}\n");
     } 
+}
+
+void FluidCube::reset() {
+    memset(s, 0, nx*nx*sizeof(double));
+    memset(density, 0, nx*nx*sizeof(double));
+
+    memset(Vx, 0, nx*nx*sizeof(double));
+    memset(Vy, 0, nx*nx*sizeof(double));
+    memset(Vx0, 0, nx*nx*sizeof(double));
+    memset(Vy0, 0, nx*nx*sizeof(double));
 }

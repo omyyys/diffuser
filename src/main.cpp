@@ -2,14 +2,19 @@
 #include <cstdlib>
 #include <cmath>
 
-#include "raylib/include/raylib.h"
+#include <unistd.h>
+
+#include "../raylib/include/raylib.h"
 
 #define RAYGUI_IMPLEMENTATION
-#include "raygui/src/raygui.h"
+#include "../raygui/src/raygui.h"
 
-#include "solver/solver.hpp"
+#include "../solver/solver.hpp"
 
 #define FPS 240
+
+#define DIFF_DEF 0.0
+#define VISC_DEF 10.0
 
 #define STD_FONT_SIZE 20
 
@@ -41,6 +46,13 @@ int main() {
         BeginDrawing();
         ClearBackground(BLACK);
 
+        if (IsKeyDown(KEY_C)) fluid.reset();
+
+        fluid.step();
+        fluid.render_density(scale, colour, particle_size);
+
+        DrawFPS(GetScreenWidth() - 100, 10);
+
         DrawText("Viscosity", 920, 70, STD_FONT_SIZE, WHITE);
         GuiSlider((Rectangle) { 920, 100, 200, 25 }, "0", "100", &visc, 0, 100);
         fluid.visc = visc;
@@ -55,6 +67,9 @@ int main() {
         DrawText("Colour", 920, 340, STD_FONT_SIZE, WHITE);
         GuiColorPicker((Rectangle) { 920, 370, 200, 200 }, NULL, &colour);
 
+        DrawText("drag mouse to draw fluid", 920, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
+        DrawText("c to clear screen", 920, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
             
@@ -62,12 +77,8 @@ int main() {
                 fluid.add_density(mouse_pos.x / scale, mouse_pos.y / scale, 1.0);
                 fluid.add_velocity(mouse_pos.x / scale, mouse_pos.y / scale, 1.0, 1.0);
             }
-        }
-
-        fluid.step();
-        fluid.render_density(scale, colour, particle_size);
-
-        DrawFPS(GetScreenWidth() - 100, 10);
+        } 
+ 
         EndDrawing();
     }
 
