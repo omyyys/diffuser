@@ -1,4 +1,7 @@
+#include <cmath>
 #include <cstdio>
+
+#include "../raylib/include/raylib.h"
 
 #define IX(x, y) (x + y*nx)
 
@@ -30,6 +33,6 @@ class FluidCube {
     void step();
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
-    void render_density(int scale);
+    void render_density(int scale, Color colour);
     void print_density(FILE *out = stdout);
 };

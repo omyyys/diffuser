@@ -23,14 +23,9 @@ double translate_range(double value, double cur_min, double cur_max, double res_
     return res_min + normalised_value * res_range;
 }
 
-Color get_colour(double dens) {
-    unsigned char dens_alpha = translate_range(dens, 0.0, 1.0, 0, 255);
-    return (Color) {
-        .r = dens_alpha,
-        .g = dens_alpha,
-        .b = 255,
-        .a = dens_alpha
-    };
+Color get_colour(Color base, double dens) { 
+    base.a = translate_range(dens, 0.0, 1.0, 0, 255);
+    return base;
 }
 
 bool double_eq(double a, double b, double eps = 1e-5) {
@@ -212,17 +207,13 @@ void FluidCube::add_velocity(int x, int y, double amountX, double amountY) {
     Vy[index] = constrain(amountY + Vy[index], 0, 1);
 }
 
-void FluidCube::render_density(int scale) {
-    BeginDrawing();
-
+void FluidCube::render_density(int scale, Color colour) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double dens = density[IX(i, j)];
-            DrawRectangle(i*scale, j*scale, 5*scale, 5*scale, get_colour(dens));
+            DrawRectangle(i*scale, j*scale, 5*scale, 5*scale, get_colour(colour, dens));
         }
     }
-
-    EndDrawing();
 }
 
 void FluidCube::print_density(FILE *f) {
