@@ -207,11 +207,11 @@ void FluidCube::add_velocity(int x, int y, double amountX, double amountY) {
     Vy[index] = constrain(amountY + Vy[index], 0, 1);
 }
 
-void FluidCube::render_density(int scale, Color colour) {
+void FluidCube::render_density(int scale, Color colour, float particle_size) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double dens = density[IX(i, j)];
-            DrawRectangle(i*scale, j*scale, 5*scale, 5*scale, get_colour(colour, dens));
+            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, get_colour(colour, dens));
         }
     }
 }

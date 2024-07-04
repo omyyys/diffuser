@@ -27,7 +27,8 @@ int main() {
     int nx = 80;
     int gui_edge = nx*scale;
 
-    float visc = 0.0;
+    float particle_size = 5;
+    float visc = 10.0;
     float diff = 0.0;
     Color colour = DARKBLUE;
     
@@ -45,11 +46,14 @@ int main() {
         fluid.visc = visc;
 
         DrawText("Diffusion", 920, 160, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.001", &diff, 0, 0.001);
+        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.0005", &diff, 0, 0.0005);
         fluid.diff = diff;
 
-        DrawText("Colour", 920, 250, STD_FONT_SIZE, WHITE);
-        GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &colour);
+        DrawText("Scale", 920, 250, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 280, 200, 25 }, "0", "10", &particle_size, 0, 10);
+
+        DrawText("Colour", 920, 340, STD_FONT_SIZE, WHITE);
+        GuiColorPicker((Rectangle) { 920, 370, 200, 200 }, NULL, &colour);
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
@@ -61,7 +65,7 @@ int main() {
         }
 
         fluid.step();
-        fluid.render_density(scale, colour);
+        fluid.render_density(scale, colour, particle_size);
 
         DrawFPS(GetScreenWidth() - 100, 10);
         EndDrawing();

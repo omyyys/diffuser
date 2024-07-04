@@ -33,6 +33,6 @@ class FluidCube {
     void step();
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
-    void render_density(int scale, Color colour);
+    void render_density(int scale, Color colour, float particle_size);
     void print_density(FILE *out = stdout);
 };
