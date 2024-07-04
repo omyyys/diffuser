@@ -4,23 +4,39 @@
 
 #include "raylib/include/raylib.h"
 #include "solver/solver.hpp"
+
+#define FPS 240
+
+bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
+    if (mouse_pos.y < 20 || mouse_pos.y > GetScreenHeight() - 20) return false;
+
+    Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
+    Rectangle screen_rect = (Rectangle) { 0, 0, (float) GetScreenWidth(), (float) GetScreenHeight() };
+    
+    return CheckCollisionRecs(mouse_rect, screen_rect);    
+}
+
     
 int main() {
-    const int scale = 10;
-    const int nx = 50;
-    const int fps = 240;
-
-    FluidCube fluid = FluidCube(nx, 0, 0, 1.0/fps);
+    int scale = 10;
+    int nx = 80;
+    
+    FluidCube fluid = FluidCube(nx, 0, 2, 1.0/FPS);
 
     InitWindow(nx*scale, nx*scale, "test");
-    SetTargetFPS(fps);
+    SetTargetFPS(FPS);
 
     while (!WindowShouldClose()) {
         ClearBackground(BLACK);
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            fluid.add_density(GetMouseX() / scale, GetMouseY() / scale, 1.0);
-            fluid.add_velocity(GetMouseX() / scale, GetMouseY() / scale, 1.0, 1.0);
+            Vector2 mouse_pos = GetMousePosition();
+            
+            if (mouse_is_in_window(mouse_pos, scale)) {
+                fluid.add_density(mouse_pos.x / scale, mouse_pos.y / scale, 1.0);
+                fluid.add_velocity(mouse_pos.x / scale, mouse_pos.y / scale, 1.0, 1.0);
+
+            }
         }
 
         fluid.step();
