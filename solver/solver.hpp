@@ -5,7 +5,7 @@
 
 #define IX(x, y) (x + y*nx)
 
-class FluidCube {
+class Fluid {
     public:
 
     int nx;
@@ -23,11 +23,11 @@ class FluidCube {
     double *Vx0;
     double *Vy0;
 
-    FluidCube(int _nx, double _diff, double _visc, double _dt);
+    Fluid(int _nx, double _diff, double _visc, double _dt);
 
     void set_bnd(int b, double *x);
     void lin_solve(int b, double *x, double *x0, double a, double c);
-    void diffuse (int b, double *x, double *x0);
+    void diffuse (int b, double diff_or_visc, double *x, double *x0);
     void advect(int b, double *d, double *d0, double *velocX, double *velocY);
     void project(double *velocX, double *velocY, double *p, double *div);
     void step();

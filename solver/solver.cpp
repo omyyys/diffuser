@@ -33,12 +33,12 @@ bool double_eq(double a, double b, double eps = 1e-5) {
     return fabs(a - b) < eps;
 }
 
-FluidCube::FluidCube(int _nx, double _diff, double _visc, double _dt) {
+Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     nx = _nx;
     diff = _diff;
     visc = _visc;
     dt = _dt;
-    iter = 4;
+    iter = 5;
 
     s = (double*) calloc(nx * nx, sizeof(double)); 
     density = (double*) calloc(nx * nx, sizeof(double));
@@ -49,7 +49,7 @@ FluidCube::FluidCube(int _nx, double _diff, double _visc, double _dt) {
     Vy0 = (double*) calloc(nx * nx, sizeof(double));
 }
 
-void FluidCube::set_bnd(int b, double *x) {
+void Fluid::set_bnd(int b, double *x) {
     for (int k = 1; k < nx - 1; k++) {
         for (int i = 1; i < nx - 1; i++) {
             x[IX(i, 0)] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
@@ -76,8 +76,7 @@ void FluidCube::set_bnd(int b, double *x) {
                                   + x[IX(nx-1, nx-2)]);
 }
 
-void FluidCube::lin_solve(int b, double *x, double *x0, double a, double c) {
-    double cRecip = 1.0 / c;
+void Fluid::lin_solve(int b, double *x, double *x0, double a, double c) {
     for (int k = 0; k < iter; k++) {
         for (int j = 1; j < nx - 1; j++) {
             for (int i = 1; i < nx - 1; i++) {
@@ -87,20 +86,20 @@ void FluidCube::lin_solve(int b, double *x, double *x0, double a, double c) {
                                 +x[IX(i-1, j)]
                                 +x[IX(i  , j+1)]
                                 +x[IX(i  , j-1)]
-                        )) * cRecip;
+                        )) * (1.0/c);
             }
         }
         set_bnd(b, x);
     }
 }
 
-void FluidCube::diffuse(int b, double *x, double *x0)
+void Fluid::diffuse(int b, double visc_or_diff, double *x, double *x0)
 {
-    double a = dt * diff * (nx - 2) * (nx - 2);
-    lin_solve(b, x, x0, a, 1 + 6 * a);
+    double a = dt * visc_or_diff * (nx) * (nx);
+    lin_solve(b, x, x0, a, 4*a + 1);
 }
 
-void FluidCube::advect(int b, double *d, double *d0, double *velocX, double *velocY) {
+void Fluid::advect(int b, double *d, double *d0, double *velocX, double *velocY) {
     double i0, i1, j0, j1;
 
     double dtx = dt * (nx - 2);
@@ -150,7 +149,7 @@ void FluidCube::advect(int b, double *d, double *d0, double *velocX, double *vel
     set_bnd(b, d);
 }
 
-void FluidCube::project(double *velocX, double *velocY, double *p, double *div)
+void Fluid::project(double *velocX, double *velocY, double *p, double *div)
 {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
@@ -160,6 +159,7 @@ void FluidCube::project(double *velocX, double *velocY, double *p, double *div)
                     +velocY[IX(i  , j+1)]
                     -velocY[IX(i  , j-1)]
                 )/nx;
+
             p[IX(i, j)] = 0;
         }
     }
@@ -181,9 +181,9 @@ void FluidCube::project(double *velocX, double *velocY, double *p, double *div)
     set_bnd(2, velocY);
 }
 
-void FluidCube::step() {    
-    diffuse(1, Vx0, Vx);
-    diffuse(2, Vy0, Vy);
+void Fluid::step() {
+    diffuse(1, visc, Vx0, Vx);
+    diffuse(2, visc, Vy0, Vy);
     
     project(Vx0, Vy0, Vx, Vy);
     
@@ -192,23 +192,22 @@ void FluidCube::step() {
     
     project(Vx, Vy, Vx0, Vy0);
     
-    diffuse(0, s, density);
+    diffuse(0, diff, s, density);
     advect(0, density, s, Vx, Vy);
 }
 
-void FluidCube::add_density(int x, int y, double amount) {
-    density[IX(x, y)] = constrain(amount + density[IX(x, y)], 0, 1);
-    
+void Fluid::add_density(int x, int y, double amount) {
+    density[IX(x, y)] = amount + density[IX(x, y)]; 
 }
 
-void FluidCube::add_velocity(int x, int y, double amountX, double amountY) {
+void Fluid::add_velocity(int x, int y, double amountX, double amountY) {
     int index = IX(x, y);
     
-    Vx[index] = constrain(amountX + Vx[index], 0, 1);
-    Vy[index] = constrain(amountY + Vy[index], 0, 1);
+    Vx[index] = amountX + Vx[index];
+    Vy[index] = amountY + Vy[index];
 }
 
-void FluidCube::render_density(int scale, Color colour, float particle_size) {
+void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double dens = density[IX(i, j)];
@@ -217,7 +216,7 @@ void FluidCube::render_density(int scale, Color colour, float particle_size) {
     }
 }
 
-void FluidCube::print_density(FILE *f) {
+void Fluid::print_density(FILE *f) {
     for (int i = 0; i < nx; i++) {
         fprintf(f, "{ ");
         for (int j = 0; j < nx; j++) {
@@ -227,7 +226,7 @@ void FluidCube::print_density(FILE *f) {
     } 
 }
 
-void FluidCube::reset() {
+void Fluid::reset() {
     memset(s, 0, nx*nx*sizeof(double));
     memset(density, 0, nx*nx*sizeof(double));
 
