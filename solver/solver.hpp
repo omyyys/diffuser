@@ -1,7 +1,10 @@
 #include <cmath>
 #include <cstdio>
+#include <vector>
 
 #include "../raylib/include/raylib.h"
+
+typedef std::vector<double> Grid;
 
 #define IX(x, y) (x + y*nx)
 
@@ -14,22 +17,22 @@ class Fluid {
     double diff;
     double visc;
     
-    double *s;
-    double *density;
+    Grid s;
+    Grid density;
     
-    double *Vx;
-    double *Vy;
+    Grid Vx;
+    Grid Vy;
 
-    double *Vx0;
-    double *Vy0;
+    Grid Vx0;
+    Grid Vy0;
 
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
-    void set_bnd(int b, double *x);
-    void lin_solve(int b, double *x, double *x0, double a, double c);
-    void diffuse (int b, double diff_or_visc, double *x, double *x0);
-    void advect(int b, double *d, double *d0, double *velocX, double *velocY);
-    void project(double *velocX, double *velocY, double *p, double *div);
+    void set_bnd(int b, Grid &x);
+    void lin_solve(int b, Grid &x, Grid &x0, double a, double c);
+    void diffuse (int b, double diff_or_visc, Grid &x, Grid &x0);
+    void advect(int b, Grid &d, Grid &d0, Grid &velocX, Grid &velocY);
+    void project(Grid &velocX, Grid &velocY, Grid &p, Grid &div);
     void step();
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);

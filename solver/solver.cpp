@@ -40,16 +40,16 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     dt = _dt;
     iter = 5;
 
-    s = (double*) calloc(nx * nx, sizeof(double)); 
-    density = (double*) calloc(nx * nx, sizeof(double));
-    
-    Vx = (double*) calloc(nx * nx, sizeof(double));
-    Vy = (double*) calloc(nx * nx, sizeof(double));
-    Vx0 = (double*) calloc(nx * nx, sizeof(double));
-    Vy0 = (double*) calloc(nx * nx, sizeof(double));
+    s = std::vector<double>(nx*nx); 
+    density = std::vector<double>(nx*nx);
+
+    Vx = std::vector<double>(nx*nx);
+    Vy = std::vector<double>(nx*nx);
+    Vx0 = std::vector<double>(nx*nx);
+    Vy0 = std::vector<double>(nx*nx);
 }
 
-void Fluid::set_bnd(int b, double *x) {
+void Fluid::set_bnd(int b, Grid &x) {
     for (int k = 1; k < nx - 1; k++) {
         for (int i = 1; i < nx - 1; i++) {
             x[IX(i, 0)] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
@@ -76,7 +76,7 @@ void Fluid::set_bnd(int b, double *x) {
                                   + x[IX(nx-1, nx-2)]);
 }
 
-void Fluid::lin_solve(int b, double *x, double *x0, double a, double c) {
+void Fluid::lin_solve(int b, Grid &x, Grid &x0, double a, double c) {
     for (int k = 0; k < iter; k++) {
         for (int j = 1; j < nx - 1; j++) {
             for (int i = 1; i < nx - 1; i++) {
@@ -93,13 +93,13 @@ void Fluid::lin_solve(int b, double *x, double *x0, double a, double c) {
     }
 }
 
-void Fluid::diffuse(int b, double visc_or_diff, double *x, double *x0)
+void Fluid::diffuse(int b, double visc_or_diff, Grid &x, Grid &x0)
 {
     double a = dt * visc_or_diff * (nx) * (nx);
     lin_solve(b, x, x0, a, 4*a + 1);
 }
 
-void Fluid::advect(int b, double *d, double *d0, double *velocX, double *velocY) {
+void Fluid::advect(int b, Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
     double i0, i1, j0, j1;
 
     double dtx = dt * (nx - 2);
@@ -149,7 +149,7 @@ void Fluid::advect(int b, double *d, double *d0, double *velocX, double *velocY)
     set_bnd(b, d);
 }
 
-void Fluid::project(double *velocX, double *velocY, double *p, double *div)
+void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
 {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
@@ -227,11 +227,11 @@ void Fluid::print_density(FILE *f) {
 }
 
 void Fluid::reset() {
-    memset(s, 0, nx*nx*sizeof(double));
-    memset(density, 0, nx*nx*sizeof(double));
+    std::fill(s.begin(), s.end(), 0);
+    std::fill(density.begin(), density.end(), 0);
 
-    memset(Vx, 0, nx*nx*sizeof(double));
-    memset(Vy, 0, nx*nx*sizeof(double));
-    memset(Vx0, 0, nx*nx*sizeof(double));
-    memset(Vy0, 0, nx*nx*sizeof(double));
+    std::fill(Vx.begin(), Vy.end(), 0);
+    std::fill(Vy.begin(), Vy.end(), 0);
+    std::fill(Vx0.begin(), Vx0.end(), 0);
+    std::fill(Vy0.begin(), Vy0.end(), 0);
 }
