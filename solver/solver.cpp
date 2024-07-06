@@ -27,7 +27,7 @@ double constrain(double value, double range_start, double range_end) {
     return value;
 }
 
-double translate_range(double value, double cur_min, double cur_max, double res_min, double res_max) {
+double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max) {
     value = constrain(value, cur_min, cur_max); 
 
     double cur_range = cur_max - cur_min;
@@ -39,7 +39,7 @@ double translate_range(double value, double cur_min, double cur_max, double res_
 }
 
 Color get_colour(Color base, double dens) { 
-    base.a = translate_range(dens, 0.0, 1.0, 0, 255);
+    base.a = lin_interpolation(dens, 0.0, 1.0, 0, 255);
     return base;
 }
 
@@ -57,10 +57,15 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     s = std::vector<double>(nx*nx); 
     density = std::vector<double>(nx*nx);
 
-    Vx = std::vector<double>(nx*nx);
-    Vy = std::vector<double>(nx*nx);
-    Vx0 = std::vector<double>(nx*nx);
-    Vy0 = std::vector<double>(nx*nx);
+    v = {
+        .x = std::vector<double>(nx*nx),
+        .y = std::vector<double>(nx*nx) 
+    };
+
+    v0 = {
+        .x = std::vector<double>(nx*nx),
+        .y = std::vector<double>(nx*nx) 
+    };
 }
 
 void Fluid::set_bnd(int b, Grid &x) {
@@ -70,6 +75,7 @@ void Fluid::set_bnd(int b, Grid &x) {
             x[IX(i, nx-1)] = b == 2 ? -x[IX(i, nx-2)] : x[IX(i, nx-2)];
         }
     }
+
     for (int k = 1; k < nx - 1; k++) {
         for (int j = 1; j < nx - 1; j++) {
             x[IX(0, j)] = b == 1 ? -x[IX(1, j)] : x[IX(1, j)];
@@ -83,7 +89,7 @@ void Fluid::set_bnd(int b, Grid &x) {
     x[IX(nx-1, nx-1)] = avg(2, x[IX(nx-2, nx-1)], x[IX(nx-1, nx-2)]);
 }
 
-void Fluid::lin_solve(int b, Grid &x, Grid &x0, double a, double c) {
+void Fluid::gauss_geidel(int b, Grid &x, Grid &x0, double a, double c) {
     for (int k = 0; k < iter; k++) {
         for (int j = 1; j < nx - 1; j++) {
             for (int i = 1; i < nx - 1; i++) {
@@ -102,7 +108,7 @@ void Fluid::lin_solve(int b, Grid &x, Grid &x0, double a, double c) {
 void Fluid::diffuse(int b, double visc_or_diff, Grid &x, Grid &x0)
 {
     double a = dt * visc_or_diff * nx * nx;
-    lin_solve(b, x, x0, a, 4*a + 1);
+    gauss_geidel(b, x, x0, a, 4*a + 1);
 }
 
 void Fluid::advect(int b, Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
@@ -172,7 +178,7 @@ void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
 
     set_bnd(0, div); 
     set_bnd(0, p);
-    lin_solve(0, p, div, 1, 6);
+    gauss_geidel(0, p, div, 1, 6);
     
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
@@ -185,19 +191,29 @@ void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
     set_bnd(2, velocY);
 }
 
+void Fluid::diffuse_velocity() {
+    double a = dt * visc * nx * nx;
+
+    gauss_geidel(1, v0.x, v.x, a, 4*a + 1);
+    gauss_geidel(2, v0.y, v.y, a, 4*a + 1);
+}
+
+void Fluid::diffuse_density() {
+    double a = dt * diff * nx * nx;
+
+    gauss_geidel(0, s, density, a, 4*a + 1);
+}
+
 void Fluid::step() {
-    diffuse(1, visc, Vx0, Vx);
-    diffuse(2, visc, Vy0, Vy);
-    
-    project(Vx0, Vy0, Vx, Vy);
-    
-    advect(1, Vx, Vx0, Vx0, Vy0);
-    advect(2, Vy, Vy0, Vx0, Vy0);
-    
-    project(Vx, Vy, Vx0, Vy0);
-    
-    diffuse(0, diff, s, density);
-    advect(0, density, s, Vx, Vy);
+    diffuse_velocity();
+
+    project(v0.x, v0.y, v.x, v.y);
+
+    advect(1, v.x, v0.x, v0.x, v0.y);
+    advect(2, v.y, v0.y, v0.x, v0.y);
+
+    diffuse_density();
+    advect(0, density, s, v.x, v.y);
 }
 
 void Fluid::add_density(int x, int y, double amount) {
@@ -207,8 +223,8 @@ void Fluid::add_density(int x, int y, double amount) {
 void Fluid::add_velocity(int x, int y, double amountX, double amountY) {
     int index = IX(x, y);
     
-    Vx[index] = amountX + Vx[index];
-    Vy[index] = amountY + Vy[index];
+    v.x[index] = amountX + v.x[index];
+    v.y[index] = amountY + v.y[index];
 }
 
 void Fluid::render_density(int scale, Color colour, float particle_size) {
@@ -235,8 +251,8 @@ void Fluid::reset() {
     std::fill(s.begin(), s.end(), 0);
     std::fill(density.begin(), density.end(), 0);
 
-    std::fill(Vx.begin(), Vy.end(), 0);
-    std::fill(Vy.begin(), Vy.end(), 0);
-    std::fill(Vx0.begin(), Vx0.end(), 0);
-    std::fill(Vy0.begin(), Vy0.end(), 0);
+    std::fill(v.x.begin(), v.y.end(), 0);
+    std::fill(v.y.begin(), v.y.end(), 0);
+    std::fill(v0.x.begin(), v0.x.end(), 0);
+    std::fill(v0.y.begin(), v0.y.end(), 0);
 }

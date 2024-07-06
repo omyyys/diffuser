@@ -11,7 +11,7 @@
 
 #include "../solver/solver.hpp"
 
-#define FPS 120
+#define FPS 60
 
 #define DIFF_DEF 0.0004
 #define VISC_DEF 20.0
@@ -20,6 +20,8 @@
 #define STD_FONT_SIZE 20
 
 #define TEST false
+
+using namespace std;
 
 void test_with_print() {
     Fluid fluid1(5, DIFF_DEF, 0.0, 1.0/FPS);
@@ -53,7 +55,7 @@ void test_with_print() {
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
-    if (mouse_pos.y < 20 || mouse_pos.y > nx*scale - 20) return false;
+    if (mouse_pos.y <= 20 || mouse_pos.y >= nx*scale - 20) return false;
 
     Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
     Rectangle screen_rect = (Rectangle) { 0, 0, (float) nx*scale, (float) nx*scale };
@@ -61,8 +63,9 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
     return CheckCollisionRecs(mouse_rect, screen_rect);    
 }
 
-    
 int main() {
+    // FILE *f = fopen("test.txt", "w");
+
     int scale = 10;
     int nx = 80;
     int gui_edge = nx*scale;
@@ -125,8 +128,11 @@ int main() {
             Vector2 mouse_pos = GetMousePosition();
             
             if (mouse_is_in_window(mouse_pos, nx, scale)) {
-                fluid.add_density(mouse_pos.x / scale, mouse_pos.y / scale, 1.0);
-                fluid.add_velocity(mouse_pos.x / scale, mouse_pos.y / scale, 1.0, 1.0);
+                fluid.add_density(round(mouse_pos.x / scale), 
+                                  round(mouse_pos.y / scale), 1.0);
+
+                fluid.add_velocity(round(mouse_pos.x / scale), 
+                                   round(mouse_pos.y / scale), 1.0, 1.0);
             }
         } 
  
