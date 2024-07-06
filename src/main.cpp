@@ -11,23 +11,15 @@
 
 #include "../solver/solver.hpp"
 
-#define FPS 60
+#define FPS 120
 
-#define DIFF_DEF 0.0002
+#define DIFF_DEF 0.0004
 #define VISC_DEF 20.0
+#define PARTICLE_SIZE_DEF 6
 
 #define STD_FONT_SIZE 20
 
 #define TEST false
-
-bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
-    if (mouse_pos.y < 20 || mouse_pos.y > nx*scale - 20) return false;
-
-    Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
-    Rectangle screen_rect = (Rectangle) { 0, 0, (float) nx*scale, (float) nx*scale };
-    
-    return CheckCollisionRecs(mouse_rect, screen_rect);    
-}
 
 void test_with_print() {
     Fluid fluid1(5, DIFF_DEF, 0.0, 1.0/FPS);
@@ -59,17 +51,27 @@ void test_with_print() {
     fluid2.print_density();
     printf("fluid 2: diff=%lf, visc=%lf\n", fluid2.diff, fluid2.visc);
 }
+
+bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
+    if (mouse_pos.y < 20 || mouse_pos.y > nx*scale - 20) return false;
+
+    Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
+    Rectangle screen_rect = (Rectangle) { 0, 0, (float) nx*scale, (float) nx*scale };
+    
+    return CheckCollisionRecs(mouse_rect, screen_rect);    
+}
+
     
 int main() {
     int scale = 10;
     int nx = 80;
     int gui_edge = nx*scale;
 
-    float particle_size = 5;
+    float particle_size = PARTICLE_SIZE_DEF;
     float visc = VISC_DEF;
     float diff = DIFF_DEF;
-    Color colour = DARKBLUE;
-    bool blend = false;
+    Color colour = ORANGE;
+    bool blend = true;
 
     int timesteps = 0;
 

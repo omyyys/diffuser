@@ -1,3 +1,4 @@
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -5,6 +6,19 @@
 
 #include "../raylib/include/raylib.h"
 #include "solver.hpp"
+
+double avg(int count, ...) {
+    double result = 0.0;
+
+    va_list args;
+    va_start(args, count);
+
+    for (int i = 0; i < count; i++) {
+        result += va_arg(args, double);
+    }
+
+    return result / count;
+}
 
 double constrain(double value, double range_start, double range_end) {
     value = (value > range_end) ? range_end : value;
@@ -58,35 +72,27 @@ void Fluid::set_bnd(int b, Grid &x) {
     }
     for (int k = 1; k < nx - 1; k++) {
         for (int j = 1; j < nx - 1; j++) {
-            x[IX(0  , j)] = b == 1 ? -x[IX(1  , j)] : x[IX(1  , j)];
+            x[IX(0, j)] = b == 1 ? -x[IX(1, j)] : x[IX(1, j)];
             x[IX(nx-1, j)] = b == 1 ? -x[IX(nx-2, j)] : x[IX(nx-2, j)];
         }
     }
     
-    x[IX(0, 0)]       = 0.5f * (x[IX(1, 0)]
-                                  + x[IX(0, 1)]);
-
-    x[IX(0, nx-1)]     = 0.5f * (x[IX(1, nx-1)]
-                                  + x[IX(0, nx-2)]);
-
-    x[IX(nx-1, 0)]     = 0.5f * (x[IX(nx-2, 0)]
-                                  + x[IX(nx-1, 1)]);
-
-    x[IX(nx-1, nx-1)]   = 0.5f * (x[IX(nx-2, nx-1)]
-                                  + x[IX(nx-1, nx-2)]);
+    x[IX(0, 0)] = avg(2, x[IX(1, 0)], x[IX(0, 1)]);
+    x[IX(0, nx-1)] = avg(2, x[IX(1, nx-1)], x[IX(0, nx-2)]);
+    x[IX(nx-1, 0)] = avg(2, x[IX(nx-2, 0)], x[IX(nx-1, 1)]);
+    x[IX(nx-1, nx-1)] = avg(2, x[IX(nx-2, nx-1)], x[IX(nx-1, nx-2)]);
 }
 
 void Fluid::lin_solve(int b, Grid &x, Grid &x0, double a, double c) {
     for (int k = 0; k < iter; k++) {
         for (int j = 1; j < nx - 1; j++) {
             for (int i = 1; i < nx - 1; i++) {
-                x[IX(i, j)] =
-                    (x0[IX(i, j)]
-                        + a*(    x[IX(i+1, j)]
-                                +x[IX(i-1, j)]
-                                +x[IX(i  , j+1)]
-                                +x[IX(i  , j-1)]
-                        )) * (1.0/c);
+                x[IX(i, j)] =  (x0[IX(i, j)] + a *
+                               (x[IX(i+1, j)] +
+                                x[IX(i-1, j)] +
+                                x[IX(i, j+1)] +
+                                x[IX(i, j-1)] )) * 
+                                (1.0/c);
             }
         }
         set_bnd(b, x);
@@ -95,7 +101,7 @@ void Fluid::lin_solve(int b, Grid &x, Grid &x0, double a, double c) {
 
 void Fluid::diffuse(int b, double visc_or_diff, Grid &x, Grid &x0)
 {
-    double a = dt * visc_or_diff * (nx) * (nx);
+    double a = dt * visc_or_diff * nx * nx;
     lin_solve(b, x, x0, a, 4*a + 1);
 }
 
@@ -153,12 +159,12 @@ void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
 {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            div[IX(i, j)] = -0.5f*(
-                     velocX[IX(i+1, j)]
-                    -velocX[IX(i-1, j)]
-                    +velocY[IX(i  , j+1)]
-                    -velocY[IX(i  , j-1)]
-                )/nx;
+            div[IX(i, j)] = -0.5f * (
+                    velocX[IX(i+1, j)] -
+                    velocX[IX(i-1, j)] +
+                    velocY[IX(i, j+1)] -
+                    velocY[IX(i, j-1)]
+                ) / nx;
 
             p[IX(i, j)] = 0;
         }
@@ -170,10 +176,8 @@ void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
     
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            velocX[IX(i, j)] -= 0.5f * (  p[IX(i+1, j)]
-                                            -p[IX(i-1, j)]) * nx;
-            velocY[IX(i, j)] -= 0.5f * (  p[IX(i, j+1)]
-                                            -p[IX(i, j-1)]) * nx;
+            velocX[IX(i, j)] -= 0.5f * (p[IX(i+1, j)] - p[IX(i-1, j)]) * nx;
+            velocY[IX(i, j)] -= 0.5f * (p[IX(i, j+1)] - p[IX(i, j-1)]) * nx;
         }
     }
 
@@ -211,7 +215,8 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double dens = density[IX(i, j)];
-            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, get_colour(colour, dens));
+            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
+                          get_colour(colour, dens));
         }
     }
 }
