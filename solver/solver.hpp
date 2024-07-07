@@ -12,6 +12,8 @@ struct Grid_Vector {
 
 #define IX(x, y) (x + y*nx)
 
+double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
+
 class Fluid {
     public:
 
@@ -32,7 +34,7 @@ class Fluid {
     void set_bnd(Grid &x);
     void gauss_seidel(Grid &x, Grid &x0, double a, double c);
     void advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY);
-    void project(Grid &velocX, Grid &velocY, Grid &p, Grid &div);
+    void project_velocity();
     void diffuse_velocity();
     void diffuse_density();
     void step();

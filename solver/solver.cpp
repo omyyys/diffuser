@@ -69,24 +69,19 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
 }
 
 void Fluid::set_bnd(Grid &x) {
-    for (int k = 1; k < nx - 1; k++) {
-        for (int i = 1; i < nx - 1; i++) {
+    for (int _ = 0; _ < nx; _++) {
+        for (int i = 0; i < nx; i++) {
             x[IX(i, 0)] = 0;
             x[IX(i, nx-1)] = 0;
         }
     }
 
-    for (int k = 1; k < nx - 1; k++) {
-        for (int j = 1; j < nx - 1; j++) {
+    for (int _ = 0; _ < nx; _++) {
+        for (int j = 0; j < nx; j++) {
             x[IX(0, j)] = 0;
             x[IX(nx-1, j)] = 0;
         }
     }
-    
-    x[IX(0, 0)] = 0;
-    x[IX(0, nx-1)] = 0;
-    x[IX(nx-1, 0)] = 0;
-    x[IX(nx-1, nx-1)] = 0;
 }
 
 void Fluid::gauss_seidel(Grid &x, Grid &x0, double a, double c) {
@@ -148,34 +143,33 @@ void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
     set_bnd(d);
 }
 
-void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
-{
+void Fluid::project_velocity() {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            div[IX(i, j)] = -0.5 * (
-                    velocX[IX(i+1, j)] -
-                    velocX[IX(i-1, j)] +
-                    velocY[IX(i, j+1)] -
-                    velocY[IX(i, j-1)]
+            v.y[IX(i, j)] = -0.5 * (
+                    v0.x[IX(i+1, j)] -
+                    v0.x[IX(i-1, j)] +
+                    v0.y[IX(i, j+1)] -
+                    v0.y[IX(i, j-1)]
                 ) / nx;
 
-            p[IX(i, j)] = 0;
+            v.x[IX(i, j)] = 0;
         }
     }
 
-    set_bnd(div); 
-    set_bnd(p);
-    gauss_seidel(p, div, 1, 6);
+    set_bnd(v.x); 
+    set_bnd(v.y);
+    gauss_seidel(v.x, v.y, 1, 6);
     
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            velocX[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] - p[IX(i-1, j)]) * nx;
-            velocY[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] - p[IX(i, j-1)]) * nx;
+            v0.x[IX(i, j)] -= 0.5 * (v.x[IX(i+1, j)] - v.x[IX(i-1, j)]) * nx;
+            v0.y[IX(i, j)] -= 0.5 * (v.x[IX(i, j+1)] - v.x[IX(i, j-1)]) * nx;
         }
     }
 
-    set_bnd(velocX);
-    set_bnd(velocY);
+    set_bnd(v0.x);
+    set_bnd(v0.y);
 }
 
 void Fluid::diffuse_velocity() {
@@ -194,7 +188,7 @@ void Fluid::diffuse_density() {
 void Fluid::step() {
     diffuse_velocity();
 
-    project(v0.x, v0.y, v.x, v.y);
+    project_velocity();
 
     advect(v.x, v0.x, v0.x, v0.y);
     advect(v.y, v0.y, v0.x, v0.y);

@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <ctime>
 
 #include <unistd.h>
 
@@ -13,7 +14,7 @@
 
 #define FPS 60
 
-#define DIFF_DEF 0.0004
+#define DIFF_DEF 0.0002
 #define VISC_DEF 20.0
 #define PARTICLE_SIZE_DEF 6
 
@@ -23,21 +24,29 @@
 
 using namespace std;
 
+double rand_in_range(double start, double end) { 
+    return lin_interpolation(rand(), 0, RAND_MAX, start, end);
+}
+
+void start_splat(Fluid &fluid) {
+    srand(time(NULL));
+
+    for (int i = 1; i < fluid.nx - 1; i++) {
+        for (int j = 1; j < fluid.nx - 1; j++) {
+            fluid.add_density(i, j, rand_in_range(0, 0.2));
+            fluid.add_velocity(i, j, rand_in_range(0, 0.2), rand_in_range(0, 0.2));
+        }
+    }
+}
+
 void test_with_print() {
     Fluid fluid1(5, DIFF_DEF, 0.0, 1.0/FPS);
     Fluid fluid2(5, DIFF_DEF, VISC_DEF, 1.0/FPS);
 
-    fluid1.add_density(2, 1, 1.0);
-    fluid1.add_density(2, 2, 1.0);
-    fluid1.add_density(2, 3, 1.0);
-    fluid1.add_density(2, 4, 1.0);
-
-    for (int i = 0; i < 60; i++) {
-        fluid1.step();
-    }
-
+    start_splat(fluid1);
     fluid1.print_density();
-    printf("fluid 1: diff=%lf, visc=%lf\n", fluid1.diff, fluid1.visc);
+
+    printf("fluid 1: diff=%lf, visc=%lf, testing random start splat\n", fluid1.diff, fluid1.visc);
 
     printf("---------------------------\n");
 
@@ -51,7 +60,7 @@ void test_with_print() {
     }
 
     fluid2.print_density();
-    printf("fluid 2: diff=%lf, visc=%lf\n", fluid2.diff, fluid2.visc);
+    printf("fluid 2: diff=%lf, visc=%lf, general test\n", fluid2.diff, fluid2.visc);
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
@@ -63,8 +72,9 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
     return CheckCollisionRecs(mouse_rect, screen_rect);    
 }
 
+
 int main() {
-    // FILE *f = fopen("test.txt", "w");
+    // FILE *f = fopen("test.txt", "w"); 
 
     int scale = 10;
     int nx = 80;
@@ -79,6 +89,8 @@ int main() {
     int timesteps = 0;
 
     Fluid fluid(nx, diff, visc, 1.0/FPS);
+
+    start_splat(fluid);
 
     if (TEST) {
         test_with_print();
