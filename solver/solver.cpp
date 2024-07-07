@@ -68,28 +68,28 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-void Fluid::set_bnd(int b, Grid &x) {
+void Fluid::set_bnd(Grid &x) {
     for (int k = 1; k < nx - 1; k++) {
         for (int i = 1; i < nx - 1; i++) {
-            x[IX(i, 0)] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
-            x[IX(i, nx-1)] = b == 2 ? -x[IX(i, nx-2)] : x[IX(i, nx-2)];
+            x[IX(i, 0)] = 0;
+            x[IX(i, nx-1)] = 0;
         }
     }
 
     for (int k = 1; k < nx - 1; k++) {
         for (int j = 1; j < nx - 1; j++) {
-            x[IX(0, j)] = b == 1 ? -x[IX(1, j)] : x[IX(1, j)];
-            x[IX(nx-1, j)] = b == 1 ? -x[IX(nx-2, j)] : x[IX(nx-2, j)];
+            x[IX(0, j)] = 0;
+            x[IX(nx-1, j)] = 0;
         }
     }
     
-    x[IX(0, 0)] = avg(2, x[IX(1, 0)], x[IX(0, 1)]);
-    x[IX(0, nx-1)] = avg(2, x[IX(1, nx-1)], x[IX(0, nx-2)]);
-    x[IX(nx-1, 0)] = avg(2, x[IX(nx-2, 0)], x[IX(nx-1, 1)]);
-    x[IX(nx-1, nx-1)] = avg(2, x[IX(nx-2, nx-1)], x[IX(nx-1, nx-2)]);
+    x[IX(0, 0)] = 0;
+    x[IX(0, nx-1)] = 0;
+    x[IX(nx-1, 0)] = 0;
+    x[IX(nx-1, nx-1)] = 0;
 }
 
-void Fluid::gauss_geidel(int b, Grid &x, Grid &x0, double a, double c) {
+void Fluid::gauss_seidel(Grid &x, Grid &x0, double a, double c) {
     for (int k = 0; k < iter; k++) {
         for (int j = 1; j < nx - 1; j++) {
             for (int i = 1; i < nx - 1; i++) {
@@ -101,24 +101,18 @@ void Fluid::gauss_geidel(int b, Grid &x, Grid &x0, double a, double c) {
                                 (1.0/c);
             }
         }
-        set_bnd(b, x);
+        set_bnd(x);
     }
 }
 
-void Fluid::diffuse(int b, double visc_or_diff, Grid &x, Grid &x0)
-{
-    double a = dt * visc_or_diff * nx * nx;
-    gauss_geidel(b, x, x0, a, 4*a + 1);
-}
-
-void Fluid::advect(int b, Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
+void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
     double i0, i1, j0, j1;
 
     double dtx = dt * (nx - 2);
     double dty = dt * (nx - 2);
     
     double s0, s1, t0, t1;
-    double tmp1, tmp2, x, y;
+    double x, y;
     
     double nxdouble = nx;
     double idouble, jdouble;
@@ -127,45 +121,38 @@ void Fluid::advect(int b, Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
     
     for (j = 1, jdouble = 1; j < nx - 1; j++, jdouble++) { 
         for (i = 1, idouble = 1; i < nx - 1; i++, idouble++) {
-            tmp1 = dtx * velocX[IX(i, j)];
-            tmp2 = dty * velocY[IX(i, j)];
-
-            x    = idouble - tmp1; 
-            y    = jdouble - tmp2;
+            x = idouble - dtx * velocX[IX(i, j)]; 
+            y = jdouble - dty * velocY[IX(i, j)];
                 
-            if(x < 0.5f) x = 0.5f; 
-            if(x > nxdouble + 0.5f) x = nxdouble + 0.5f; 
+            if (x < 0.5) x = 0.5;
+            x = constrain(x, 0, nxdouble + 0.5);
             i0 = floorf(x); 
-            i1 = i0 + 1.0f;
-            if(y < 0.5f) y = 0.5f; 
-            if(y > nxdouble + 0.5f) y = nxdouble + 0.5f; 
+            i1 = i0 + 1.0;
+
+            if (y < 0.5) y = 0.5; 
+            y = constrain(y, 0, nxdouble + 0.5);
             j0 = floorf(y);
-            j1 = j0 + 1.0f; 
+            j1 = j0 + 1.0; 
                 
             s1 = x - i0; 
-            s0 = 1.0f - s1; 
+            s0 = 1.0 - s1; 
             t1 = y - j0; 
-            t0 = 1.0f - t1;
-                
-            int i0i = i0;
-            int i1i = i1;
-            int j0i = j0;
-            int j1i = j1;
+            t0 = 1.0 - t1;
                 
             d[IX(i, j)] = 
-                s0 * (t0 * d0[IX(i0i, j0i)] + t1 * d0[IX(i0i, j1i)]) + 
-                s1 * (t0 * d0[IX(i1i, j0i)] + t1 * d0[IX(i1i, j1i)]);
+                s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)]) + 
+                s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
         }
     }
 
-    set_bnd(b, d);
+    set_bnd(d);
 }
 
 void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
 {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            div[IX(i, j)] = -0.5f * (
+            div[IX(i, j)] = -0.5 * (
                     velocX[IX(i+1, j)] -
                     velocX[IX(i-1, j)] +
                     velocY[IX(i, j+1)] -
@@ -176,32 +163,32 @@ void Fluid::project(Grid &velocX, Grid &velocY, Grid &p, Grid &div)
         }
     }
 
-    set_bnd(0, div); 
-    set_bnd(0, p);
-    gauss_geidel(0, p, div, 1, 6);
+    set_bnd(div); 
+    set_bnd(p);
+    gauss_seidel(p, div, 1, 6);
     
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            velocX[IX(i, j)] -= 0.5f * (p[IX(i+1, j)] - p[IX(i-1, j)]) * nx;
-            velocY[IX(i, j)] -= 0.5f * (p[IX(i, j+1)] - p[IX(i, j-1)]) * nx;
+            velocX[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] - p[IX(i-1, j)]) * nx;
+            velocY[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] - p[IX(i, j-1)]) * nx;
         }
     }
 
-    set_bnd(1, velocX);
-    set_bnd(2, velocY);
+    set_bnd(velocX);
+    set_bnd(velocY);
 }
 
 void Fluid::diffuse_velocity() {
     double a = dt * visc * nx * nx;
 
-    gauss_geidel(1, v0.x, v.x, a, 4*a + 1);
-    gauss_geidel(2, v0.y, v.y, a, 4*a + 1);
+    gauss_seidel(v0.x, v.x, a, 4*a + 1);
+    gauss_seidel(v0.y, v.y, a, 4*a + 1);
 }
 
 void Fluid::diffuse_density() {
     double a = dt * diff * nx * nx;
 
-    gauss_geidel(0, s, density, a, 4*a + 1);
+    gauss_seidel(s, density, a, 4*a + 1);
 }
 
 void Fluid::step() {
@@ -209,11 +196,11 @@ void Fluid::step() {
 
     project(v0.x, v0.y, v.x, v.y);
 
-    advect(1, v.x, v0.x, v0.x, v0.y);
-    advect(2, v.y, v0.y, v0.x, v0.y);
+    advect(v.x, v0.x, v0.x, v0.y);
+    advect(v.y, v0.y, v0.x, v0.y);
 
     diffuse_density();
-    advect(0, density, s, v.x, v.y);
+    advect(density, s, v.x, v.y);
 }
 
 void Fluid::add_density(int x, int y, double amount) {
