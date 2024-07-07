@@ -12,7 +12,7 @@
 
 #include "../solver/solver.hpp"
 
-#define FPS 60
+#define FPS 120
 
 #define DIFF_DEF 0.0002
 #define VISC_DEF 20.0
@@ -21,6 +21,8 @@
 #define STD_FONT_SIZE 20
 
 #define TEST false
+#define BENCHMARK false
+#define BENCHMARK_TIMESTEPS 1000
 
 using namespace std;
 
@@ -74,7 +76,7 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
 
 
 int main() {
-    // FILE *f = fopen("test.txt", "w"); 
+    // FILE *f = fopen("test.txt", "w");
 
     int scale = 10;
     int nx = 80;
@@ -87,6 +89,7 @@ int main() {
     bool blend = true;
 
     int timesteps = 0;
+    int fps_sum = 0;
 
     Fluid fluid(nx, diff, visc, 1.0/FPS);
 
@@ -151,9 +154,15 @@ int main() {
         EndDrawing();
 
         timesteps++;
+        if (BENCHMARK) {
+            fps_sum += GetFPS();
+            if (timesteps >= BENCHMARK_TIMESTEPS) break;
+        }
     }
 
     CloseWindow();
+
+    if (BENCHMARK) printf("avg fps over %d timesteps: %0.1lf\n", timesteps, double(fps_sum) / timesteps);
 
     return 0;
 }
