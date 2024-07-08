@@ -16,7 +16,7 @@
 
 #define DIFF_DEF 0.0002
 #define VISC_DEF 20.0
-#define PARTICLE_SIZE_DEF 6
+#define PARTICLE_SIZE_DEF 7
 
 #define STD_FONT_SIZE 20
 
@@ -26,18 +26,32 @@
 
 using namespace std;
 
-double rand_in_range(double start, double end) { 
+double rand_double(double start, double end) { 
     return lin_interpolation(rand(), 0, RAND_MAX, start, end);
 }
 
-void start_splat(Fluid &fluid) {
-    srand(time(NULL));
+int rand_int(int start, int end) {
+    return (rand() % (end - start + 1)) + start; 
+} 
 
+void start_splat(Fluid &fluid) {
     for (int i = 1; i < fluid.nx - 1; i++) {
         for (int j = 1; j < fluid.nx - 1; j++) {
-            fluid.add_density(i, j, rand_in_range(0, 0.2));
-            fluid.add_velocity(i, j, rand_in_range(0, 0.2), rand_in_range(0, 0.2));
+            if ((i + j*fluid.nx) % 2 != 0) continue;
+
+            fluid.add_density(i, j, rand_double(0, 0.1));
+            fluid.add_velocity(i, j, rand_double(0, 0.1), rand_double(0, 0.1));
         }
+    }
+}
+
+void auto_mode_spawn(Fluid &fluid, int splats) {
+    for (int i = 0; i < splats; i++) {
+        int index_x = rand_int(3, fluid.nx - 3); 
+        int index_y = rand_int(3, fluid.nx - 3); 
+
+        fluid.add_density(index_x, index_y, 1.0);
+        fluid.add_velocity(index_x, index_y, 1.0, 1.0);
     }
 }
 
@@ -76,7 +90,7 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
 
 
 int main() {
-    // FILE *f = fopen("test.txt", "w");
+    srand(time(NULL));
 
     int scale = 10;
     int nx = 80;
@@ -87,13 +101,14 @@ int main() {
     float diff = DIFF_DEF;
     Color colour = ORANGE;
     bool blend = true;
+    bool auto_mode = false;
 
     int timesteps = 0;
     int fps_sum = 0;
 
     Fluid fluid(nx, diff, visc, 1.0/FPS);
 
-    start_splat(fluid);
+    // start_splat(fluid);
 
     if (TEST) {
         test_with_print();
@@ -134,10 +149,15 @@ int main() {
         DrawText("Additive Blending", 920, 630, STD_FONT_SIZE, WHITE);
         GuiCheckBox((Rectangle) { 1120, 630, 20, 20 }, NULL, &blend);
 
+        DrawText("Auto Mode", 920, 660, STD_FONT_SIZE, WHITE);
+        GuiCheckBox((Rectangle) { 1055, 660, 20, 20 }, NULL, &auto_mode);
+
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
 
         DrawText("drag mouse to draw fluid", 920, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
         DrawText("c to clear screen", 920, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+
+        if (auto_mode) auto_mode_spawn(fluid, 5); 
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
