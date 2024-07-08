@@ -29,6 +29,7 @@ class Fluid {
     Grid_Vector v;
     Grid_Vector v0;
 
+    Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
     void set_bnd(Grid &x);

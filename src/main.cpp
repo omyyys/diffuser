@@ -17,6 +17,7 @@
 #define DIFF_DEF 0.0002
 #define VISC_DEF 20.0
 #define PARTICLE_SIZE_DEF 7
+#define RANDOM_SPLAT_COUNT 150
 
 #define STD_FONT_SIZE 20
 
@@ -45,13 +46,13 @@ void start_splat(Fluid &fluid) {
     }
 }
 
-void auto_mode_spawn(Fluid &fluid, int splats) {
+void random_spawn(Fluid &fluid, int splats) {
     for (int i = 0; i < splats; i++) {
         int index_x = rand_int(3, fluid.nx - 3); 
         int index_y = rand_int(3, fluid.nx - 3); 
 
-        fluid.add_density(index_x, index_y, 1.0);
-        fluid.add_velocity(index_x, index_y, 1.0, 1.0);
+        fluid.add_density(index_x, index_y, rand_double(0.5, 1.0));
+        fluid.add_velocity(index_x, index_y, rand_double(0.5, 1.0), rand_double(0.5, 1.0));
     }
 }
 
@@ -88,10 +89,9 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
     return CheckCollisionRecs(mouse_rect, screen_rect);    
 }
 
-
 int main() {
     srand(time(NULL));
-
+    
     int scale = 10;
     int nx = 80;
     int gui_edge = nx*scale;
@@ -101,7 +101,6 @@ int main() {
     float diff = DIFF_DEF;
     Color colour = ORANGE;
     bool blend = true;
-    bool auto_mode = false;
 
     int timesteps = 0;
     int fps_sum = 0;
@@ -116,6 +115,7 @@ int main() {
     }
 
     InitWindow(gui_edge + 400, gui_edge, "test");
+    GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
 
     while (!WindowShouldClose()) {
@@ -149,15 +149,14 @@ int main() {
         DrawText("Additive Blending", 920, 630, STD_FONT_SIZE, WHITE);
         GuiCheckBox((Rectangle) { 1120, 630, 20, 20 }, NULL, &blend);
 
-        DrawText("Auto Mode", 920, 660, STD_FONT_SIZE, WHITE);
-        GuiCheckBox((Rectangle) { 1055, 660, 20, 20 }, NULL, &auto_mode);
-
+        if (GuiButton((Rectangle) { 920, 680, 150, 40 }, "Random splat")) {
+            random_spawn(fluid, RANDOM_SPLAT_COUNT);
+        }
+        
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
 
-        DrawText("drag mouse to draw fluid", 920, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
-        DrawText("c to clear screen", 920, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
-
-        if (auto_mode) auto_mode_spawn(fluid, 5); 
+        DrawText("drag mouse to draw fluid", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
+        DrawText("c to clear screen", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
 
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
