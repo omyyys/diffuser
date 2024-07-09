@@ -16,7 +16,7 @@
 
 #define FPS 120
 
-#define DIFF_DEF 0.01
+#define DIFF_DEF 0.005
 #define VISC_DEF 10.0
 #define PARTICLE_SIZE_DEF 2
 #define RANDOM_SPLAT_COUNT 20
@@ -43,15 +43,12 @@ void random_spawn(Fluid &fluid, int splats) {
     }
 }
 
-Color colour_lin_interpolate(double value, Color a, Color b) {
-    value = constrain(value, 0, 1);
-
-    return (Color) {
-        .r = (unsigned char) (fmin(a.r, b.r) + abs(a.r - b.r) * value),
-        .g = (unsigned char) (fmin(a.g, b.g) + abs(a.g - b.g) * value),
-        .b = (unsigned char) (fmin(a.b, b.b) + abs(a.b - b.b) * value),
-        .a = (unsigned char) (fmin(a.a, b.a) + abs(a.a - b.a) * value),
-    };
+Color get_colour(int timesteps) {
+    return ColorFromHSV (
+        timesteps % 360,
+        100, 
+        60
+    );
 }
 
 void test_with_print() {
@@ -133,10 +130,8 @@ int main() {
         fluid.render_density(scale, colour, particle_size);
         if (blend) EndBlendMode();
 
-        if (colour_change) {
-            printf("NOT IMPLEMENTED: automatic colour change is not implemented\n");
-            colour_change = false;
-        };
+        // Change colour every 10 frames
+        if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
 
         fluid.fade_density(0.001);
 
@@ -147,7 +142,7 @@ int main() {
         fluid.visc = visc;
 
         DrawText("Diffusion", 920, 160, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
+        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.05", &diff, 0.0, 0.05);
         fluid.diff = diff;
 
         DrawText("Scale", 920, 250, STD_FONT_SIZE, WHITE);
@@ -159,7 +154,7 @@ int main() {
         DrawText("Additive Blending", 920, 630, STD_FONT_SIZE, WHITE);
         GuiCheckBox((Rectangle) { 1120, 630, 20, 20 }, NULL, &blend);
 
-        DrawText("Rave", 920, 680, STD_FONT_SIZE, WHITE);
+        DrawText("Change Colours", 920, 680, STD_FONT_SIZE, WHITE);
         GuiCheckBox((Rectangle) { 1120, 680, 20, 20 }, NULL, &colour_change);
 
         if (GuiButton((Rectangle) { 920, 730, 200, 40 }, "Random splat")) {
