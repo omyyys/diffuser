@@ -4,21 +4,11 @@
 #include <cstring>
 #include <cmath>
 
+#define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
+#undef Matrix
+
 #include "solver.hpp"
-
-double avg(int count, ...) {
-    double result = 0.0;
-
-    va_list args;
-    va_start(args, count);
-
-    for (int i = 0; i < count; i++) {
-        result += va_arg(args, double);
-    }
-
-    return result / count;
-}
 
 double constrain(double value, double range_start, double range_end) {
     value = (value > range_end) ? range_end : value;
@@ -68,7 +58,7 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-void Fluid::set_bnd(Grid &x) {
+void Fluid::set_bnd(Matrix &x) {
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
             x[i][0] = 0;
@@ -84,7 +74,7 @@ void Fluid::set_bnd(Grid &x) {
     }
 }
 
-void Fluid::gauss_seidel(Grid &x, Grid &x0, double a) {
+void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a) {
     double c = 4*a + 1; 
 
     for (int k = 0; k < iter; k++) {
@@ -101,7 +91,7 @@ void Fluid::gauss_seidel(Grid &x, Grid &x0, double a) {
     }
 }
 
-void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
+void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
     double i0, i1, j0, j1;
 
     double dtx = dt * (nx - 2);
@@ -208,6 +198,14 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                           get_colour(colour, dens));
+        }
+    }
+}
+
+void Fluid::fade_density(double fade) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < nx; j++) {
+            density[i][j] = constrain(density[i][j] - fade, 0, 1);
         }
     }
 }

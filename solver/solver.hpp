@@ -2,12 +2,14 @@
 #include <cstdio>
 #include <vector>
 
+#define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
+#undef Matrix
 
-typedef std::vector<std::vector<double>> Grid;
+typedef std::vector<std::vector<double>> Matrix;
 
-struct Grid_Vector {
-    Grid x, y;
+struct Matrix_Vector {
+    Matrix x, y;
 };
 
 double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
@@ -21,18 +23,18 @@ class Fluid {
     double diff;
     double visc;
     
-    Grid s;
-    Grid density;
+    Matrix s;
+    Matrix density;
     
-    Grid_Vector v;
-    Grid_Vector v0;
+    Matrix_Vector v;
+    Matrix_Vector v0;
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
-    void set_bnd(Grid &x);
-    void gauss_seidel(Grid &x, Grid &x0, double a);
-    void advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY);
+    void set_bnd(Matrix &x);
+    void gauss_seidel(Matrix &x, Matrix &x0, double a);
+    void advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY);
     void project_velocity();
     void diffuse_velocity();
     void diffuse_density();
@@ -40,6 +42,7 @@ class Fluid {
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
     void render_density(int scale, Color colour, float particle_size);
+    void fade_density(double fade);
     void print_density(FILE *out = stdout);
     void reset();
 };

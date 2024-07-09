@@ -5,18 +5,20 @@
 
 #include <unistd.h>
 
+#define Matrix Raylib_Matrix 
 #include "../raylib/include/raylib.h"
+#undef Matrix
 
 #define RAYGUI_IMPLEMENTATION
 #include "../raygui/src/raygui.h"
-
+ 
 #include "../solver/solver.hpp"
 
 #define FPS 120
 
-#define DIFF_DEF 0.05
+#define DIFF_DEF 0.02
 #define VISC_DEF 10.0
-#define PARTICLE_SIZE_DEF 5
+#define PARTICLE_SIZE_DEF 2
 #define RANDOM_SPLAT_COUNT 200
 
 #define STD_FONT_SIZE 20
@@ -101,8 +103,6 @@ int main() {
 
     Fluid fluid(nx, diff, visc, 1.0/FPS);
 
-    // start_splat(fluid);
-
     if (TEST) {
         test_with_print();
         return 0;
@@ -125,6 +125,8 @@ int main() {
         fluid.render_density(scale, colour, particle_size);
         if (blend) EndBlendMode();
 
+        fluid.fade_density(0.001);
+
         DrawFPS(GetScreenWidth() - 100, 10);
 
         DrawText("Viscosity", 920, 70, STD_FONT_SIZE, WHITE);
@@ -132,7 +134,7 @@ int main() {
         fluid.visc = visc;
 
         DrawText("Diffusion", 920, 160, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "1.0", &diff, 0.0, 0.1);
+        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
         fluid.diff = diff;
 
         DrawText("Scale", 920, 250, STD_FONT_SIZE, WHITE);
