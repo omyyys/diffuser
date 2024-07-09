@@ -92,7 +92,7 @@ void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a) {
 }
 
 void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
-    double i0, i1, j0, j1;
+    int ix, iy;
 
     double dtx = dt * (nx - 2);
     double dty = dt * (nx - 2);
@@ -100,29 +100,22 @@ void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
     double s0, s1, t0, t1;
     double x, y;
 
-    double nxdouble = nx;
-
     for (double j = 1; j < nx - 1; j++) { 
         for (double i = 1; i < nx - 1; i++) {
-            x = i - dtx * velocX[i][j]; 
-            y = j - dty * velocY[i][j];
+            x = constrain(i - dtx * velocX[i][j], 0.5, nx + 0.5);
+            ix = floorf(x); 
 
-            x = constrain(x, 0.5, nxdouble + 0.5);
-            i0 = floorf(x); 
-            i1 = i0 + 1.0;
-
-            y = constrain(y, 0.5, nxdouble + 0.5);
-            j0 = floorf(y);
-            j1 = j0 + 1.0; 
+            y = constrain(j - dty * velocY[i][j], 0.5, nx + 0.5);
+            iy = floorf(y); 
                 
-            s1 = x - i0; 
+            s1 = x - ix; 
             s0 = 1.0 - s1; 
-            t1 = y - j0; 
+            t1 = y - iy; 
             t0 = 1.0 - t1;
                 
             d[i][j] = 
-                s0 * (t0 * d0[i0][j0] + t1 * d0[i0][j1]) + 
-                s1 * (t0 * d0[i1][j0] + t1 * d0[i1][j1]);
+                s0 * (t0 * d0[ix][iy] + t1 * d0[ix][iy+1]) + 
+                s1 * (t0 * d0[ix+1][iy] + t1 * d0[ix+1][iy+1]);
         }
     }
 
@@ -221,11 +214,11 @@ void Fluid::print_density(FILE *f) {
 }
 
 void Fluid::reset() {
-    std::fill(s.begin(), s.end(), std::vector<double>(nx));
-    std::fill(density.begin(), density.end(), std::vector<double>(nx));
+    for (auto& vec : s) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : density) std::fill(vec.begin(), vec.end(), 0);
 
-    std::fill(v.x.begin(), v.y.end(), std::vector<double>(nx));
-    std::fill(v.y.begin(), v.y.end(), std::vector<double>(nx));
-    std::fill(v0.x.begin(), v0.x.end(), std::vector<double>(nx));
-    std::fill(v0.y.begin(), v0.y.end(), std::vector<double>(nx));
+    for (auto& vec : v.x) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v.y) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v0.x) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v0.y) std::fill(vec.begin(), vec.end(), 0);
 }
