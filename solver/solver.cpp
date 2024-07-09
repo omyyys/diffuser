@@ -52,48 +52,49 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     diff = _diff;
     visc = _visc;
     dt = _dt;
-    iter = 5;
+    iter = 20;
 
-    s = std::vector<double>(nx*nx); 
-    density = std::vector<double>(nx*nx);
+    s = std::vector(nx, std::vector<double>(nx, 0));
+    density = std::vector(nx, std::vector<double>(nx, 0));
 
     v = {
-        .x = std::vector<double>(nx*nx),
-        .y = std::vector<double>(nx*nx) 
+        .x = std::vector(nx, std::vector<double>(nx, 0)),
+        .y = std::vector(nx, std::vector<double>(nx, 0)) 
     };
 
     v0 = {
-        .x = std::vector<double>(nx*nx),
-        .y = std::vector<double>(nx*nx) 
+        .x = std::vector(nx, std::vector<double>(nx, 0)),
+        .y = std::vector(nx, std::vector<double>(nx, 0)) 
     };
 }
 
 void Fluid::set_bnd(Grid &x) {
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
-            x[IX(i, 0)] = 0;
-            x[IX(i, nx-1)] = 0;
+            x[i][0] = 0;
+            x[i][nx-1] = 0;
         }
     }
 
     for (int _ = 0; _ < nx; _++) {
         for (int j = 0; j < nx; j++) {
-            x[IX(0, j)] = 0;
-            x[IX(nx-1, j)] = 0;
+            x[0][j] = 0;
+            x[nx-1][j] = 0;
         }
     }
 }
 
-void Fluid::gauss_seidel(Grid &x, Grid &x0, double a, double c) {
+void Fluid::gauss_seidel(Grid &x, Grid &x0, double a) {
+    double c = 4*a + 1; 
+
     for (int k = 0; k < iter; k++) {
-        for (int j = 1; j < nx - 1; j++) {
-            for (int i = 1; i < nx - 1; i++) {
-                x[IX(i, j)] =  (x0[IX(i, j)] + a *
-                               (x[IX(i+1, j)] +
-                                x[IX(i-1, j)] +
-                                x[IX(i, j+1)] +
-                                x[IX(i, j-1)] )) * 
-                                (1.0/c);
+        for (int i = 1; i < nx - 1; i++) {
+            for (int j = 1; j < nx - 1; j++) {
+                x[i][j] =  ((x0[i][j]) + a *
+                           (x[i+1][j] +
+                            x[i-1][j] +
+                            x[i][j+1] +
+                            x[i][j-1] )) * (1.0/c);
             }
         }
         set_bnd(x);
@@ -108,24 +109,19 @@ void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
     
     double s0, s1, t0, t1;
     double x, y;
-    
-    double nxdouble = nx;
-    double idouble, jdouble;
 
-    int i, j;
-    
-    for (j = 1, jdouble = 1; j < nx - 1; j++, jdouble++) { 
-        for (i = 1, idouble = 1; i < nx - 1; i++, idouble++) {
-            x = idouble - dtx * velocX[IX(i, j)]; 
-            y = jdouble - dty * velocY[IX(i, j)];
-                
-            if (x < 0.5) x = 0.5;
-            x = constrain(x, 0, nxdouble + 0.5);
+    double nxdouble = nx;
+
+    for (double j = 1; j < nx - 1; j++) { 
+        for (double i = 1; i < nx - 1; i++) {
+            x = i - dtx * velocX[i][j]; 
+            y = j - dty * velocY[i][j];
+
+            x = constrain(x, 0.5, nxdouble + 0.5);
             i0 = floorf(x); 
             i1 = i0 + 1.0;
 
-            if (y < 0.5) y = 0.5; 
-            y = constrain(y, 0, nxdouble + 0.5);
+            y = constrain(y, 0.5, nxdouble + 0.5);
             j0 = floorf(y);
             j1 = j0 + 1.0; 
                 
@@ -134,9 +130,9 @@ void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
             t1 = y - j0; 
             t0 = 1.0 - t1;
                 
-            d[IX(i, j)] = 
-                s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)]) + 
-                s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
+            d[i][j] = 
+                s0 * (t0 * d0[i0][j0] + t1 * d0[i0][j1]) + 
+                s1 * (t0 * d0[i1][j0] + t1 * d0[i1][j1]);
         }
     }
 
@@ -146,25 +142,25 @@ void Fluid::advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY) {
 void Fluid::project_velocity() {
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            v.y[IX(i, j)] = -0.5 * (
-                    v0.x[IX(i+1, j)] -
-                    v0.x[IX(i-1, j)] +
-                    v0.y[IX(i, j+1)] -
-                    v0.y[IX(i, j-1)]
+            v.y[i][j] = -0.5 * (
+                    v0.x[i+1][j] -
+                    v0.x[i-1][j] +
+                    v0.y[i][j+1] -
+                    v0.y[i][j-1]
                 ) / nx;
 
-            v.x[IX(i, j)] = 0;
+            v.x[i][j] = 0;
         }
     }
 
     set_bnd(v.x); 
     set_bnd(v.y);
-    gauss_seidel(v.x, v.y, 1, 6);
+    gauss_seidel(v.x, v.y, 1);
     
     for (int j = 1; j < nx - 1; j++) {
         for (int i = 1; i < nx - 1; i++) {
-            v0.x[IX(i, j)] -= 0.5 * (v.x[IX(i+1, j)] - v.x[IX(i-1, j)]) * nx;
-            v0.y[IX(i, j)] -= 0.5 * (v.x[IX(i, j+1)] - v.x[IX(i, j-1)]) * nx;
+            v0.x[i][j] -= 0.5 * (v.x[i+1][j] - v.x[i-1][j]) * nx;
+            v0.y[i][j] -= 0.5 * (v.x[i][j+1] - v.x[i][j-1]) * nx;
         }
     }
 
@@ -173,16 +169,16 @@ void Fluid::project_velocity() {
 }
 
 void Fluid::diffuse_velocity() {
-    double a = dt * visc * nx * nx;
+    double a = dt * visc * (nx-2) * (nx-2);
 
-    gauss_seidel(v0.x, v.x, a, 4*a + 1);
-    gauss_seidel(v0.y, v.y, a, 4*a + 1);
+    gauss_seidel(v0.x, v.x, a);
+    gauss_seidel(v0.y, v.y, a);
 }
 
 void Fluid::diffuse_density() {
-    double a = dt * diff * nx * nx;
+    double a = dt * diff * (nx-2) * (nx-2);
 
-    gauss_seidel(s, density, a, 4*a + 1);
+    gauss_seidel(s, density, a);
 }
 
 void Fluid::step() {
@@ -198,20 +194,18 @@ void Fluid::step() {
 }
 
 void Fluid::add_density(int x, int y, double amount) {
-    density[IX(x, y)] = amount + density[IX(x, y)]; 
+    density[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amount; 
 }
 
-void Fluid::add_velocity(int x, int y, double amountX, double amountY) {
-    int index = IX(x, y);
-    
-    v.x[index] = amountX + v.x[index];
-    v.y[index] = amountY + v.y[index];
+void Fluid::add_velocity(int x, int y, double amountX, double amountY) {    
+    v.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amountX;
+    v.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amountY;
 }
 
 void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
-            double dens = density[IX(i, j)];
+            double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                           get_colour(colour, dens));
         }
@@ -222,18 +216,18 @@ void Fluid::print_density(FILE *f) {
     for (int i = 0; i < nx; i++) {
         fprintf(f, "{ ");
         for (int j = 0; j < nx; j++) {
-            fprintf(f, "%lf ", density[IX(i, j)]);
+            fprintf(f, "%lf ", density[i][j]);
         }
         fprintf(f, "}\n");
     } 
 }
 
 void Fluid::reset() {
-    std::fill(s.begin(), s.end(), 0);
-    std::fill(density.begin(), density.end(), 0);
+    std::fill(s.begin(), s.end(), std::vector<double>(nx));
+    std::fill(density.begin(), density.end(), std::vector<double>(nx));
 
-    std::fill(v.x.begin(), v.y.end(), 0);
-    std::fill(v.y.begin(), v.y.end(), 0);
-    std::fill(v0.x.begin(), v0.x.end(), 0);
-    std::fill(v0.y.begin(), v0.y.end(), 0);
+    std::fill(v.x.begin(), v.y.end(), std::vector<double>(nx));
+    std::fill(v.y.begin(), v.y.end(), std::vector<double>(nx));
+    std::fill(v0.x.begin(), v0.x.end(), std::vector<double>(nx));
+    std::fill(v0.y.begin(), v0.y.end(), std::vector<double>(nx));
 }

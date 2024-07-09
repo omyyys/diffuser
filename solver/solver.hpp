@@ -4,13 +4,11 @@
 
 #include "../raylib/include/raylib.h"
 
-typedef std::vector<double> Grid;
+typedef std::vector<std::vector<double>> Grid;
 
 struct Grid_Vector {
     Grid x, y;
 };
-
-#define IX(x, y) (x + y*nx)
 
 double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
 
@@ -33,7 +31,7 @@ class Fluid {
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
     void set_bnd(Grid &x);
-    void gauss_seidel(Grid &x, Grid &x0, double a, double c);
+    void gauss_seidel(Grid &x, Grid &x0, double a);
     void advect(Grid &d, Grid &d0, Grid &velocX, Grid &velocY);
     void project_velocity();
     void diffuse_velocity();

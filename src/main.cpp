@@ -14,10 +14,10 @@
 
 #define FPS 120
 
-#define DIFF_DEF 0.0002
-#define VISC_DEF 20.0
-#define PARTICLE_SIZE_DEF 7
-#define RANDOM_SPLAT_COUNT 150
+#define DIFF_DEF 0.05
+#define VISC_DEF 10.0
+#define PARTICLE_SIZE_DEF 5
+#define RANDOM_SPLAT_COUNT 200
 
 #define STD_FONT_SIZE 20
 
@@ -35,17 +35,6 @@ int rand_int(int start, int end) {
     return (rand() % (end - start + 1)) + start; 
 } 
 
-void start_splat(Fluid &fluid) {
-    for (int i = 1; i < fluid.nx - 1; i++) {
-        for (int j = 1; j < fluid.nx - 1; j++) {
-            if ((i + j*fluid.nx) % 2 != 0) continue;
-
-            fluid.add_density(i, j, rand_double(0, 0.1));
-            fluid.add_velocity(i, j, rand_double(0, 0.1), rand_double(0, 0.1));
-        }
-    }
-}
-
 void random_spawn(Fluid &fluid, int splats) {
     for (int i = 0; i < splats; i++) {
         int index_x = rand_int(3, fluid.nx - 3); 
@@ -57,22 +46,27 @@ void random_spawn(Fluid &fluid, int splats) {
 }
 
 void test_with_print() {
-    Fluid fluid1(5, DIFF_DEF, 0.0, 1.0/FPS);
-    Fluid fluid2(5, DIFF_DEF, VISC_DEF, 1.0/FPS);
+    Fluid fluid1(7, DIFF_DEF, 0.0, 1.0/FPS);
+    Fluid fluid2(7, DIFF_DEF, 10.0, 1.0/FPS);
 
-    start_splat(fluid1);
+    fluid1.add_density(2, 1, 1.0);
+    fluid1.add_density(2, 2, 1.0);
+    fluid1.add_density(2, 3, 1.0);
+    fluid1.add_density(2, 4, 1.0);
+
+    for (int i = 0; i < 60; i++) { 
+        fluid1.step();
+    }
+
     fluid1.print_density();
-
-    printf("fluid 1: diff=%lf, visc=%lf, testing random start splat\n", fluid1.diff, fluid1.visc);
-
-    printf("---------------------------\n");
+    printf("fluid 1: diff=%lf, visc=%lf, general test\n", fluid1.diff, fluid1.visc);
 
     fluid2.add_density(2, 1, 1.0);
     fluid2.add_density(2, 2, 1.0);
     fluid2.add_density(2, 3, 1.0);
     fluid2.add_density(2, 4, 1.0);
 
-    for (int i = 0; i < 60; i++) {
+    for (int i = 0; i < 60; i++) { 
         fluid2.step();
     }
 
@@ -92,15 +86,15 @@ bool mouse_is_in_window(Vector2 mouse_pos, int nx, int scale) {
 int main() {
     srand(time(NULL));
     
-    int scale = 10;
-    int nx = 80;
+    int scale = 20;
+    int nx = 40;
     int gui_edge = nx*scale;
 
     float particle_size = PARTICLE_SIZE_DEF;
     float visc = VISC_DEF;
     float diff = DIFF_DEF;
     Color colour = ORANGE;
-    bool blend = true;
+    bool blend = true; 
 
     int timesteps = 0;
     int fps_sum = 0;
@@ -114,6 +108,7 @@ int main() {
         return 0;
     }
 
+    SetConfigFlags(FLAG_MSAA_4X_HINT); 
     InitWindow(gui_edge + 400, gui_edge, "test");
     GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
@@ -133,11 +128,11 @@ int main() {
         DrawFPS(GetScreenWidth() - 100, 10);
 
         DrawText("Viscosity", 920, 70, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 100, 200, 25 }, "0", "200", &visc, 0.0, 200.0);
+        GuiSlider((Rectangle) { 920, 100, 200, 25 }, "0", "50", &visc, 0.0, 50.0);
         fluid.visc = visc;
 
         DrawText("Diffusion", 920, 160, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "0.001", &diff, 0.0, 0.001);
+        GuiSlider((Rectangle) { 920, 190, 200, 25 }, "0", "1.0", &diff, 0.0, 0.1);
         fluid.diff = diff;
 
         DrawText("Scale", 920, 250, STD_FONT_SIZE, WHITE);
@@ -150,7 +145,8 @@ int main() {
         GuiCheckBox((Rectangle) { 1120, 630, 20, 20 }, NULL, &blend);
 
         if (GuiButton((Rectangle) { 920, 680, 150, 40 }, "Random splat")) {
-            random_spawn(fluid, RANDOM_SPLAT_COUNT);
+            for (int i = 0; i < 5; i++)
+                random_spawn(fluid, RANDOM_SPLAT_COUNT);
         }
         
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
