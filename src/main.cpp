@@ -16,10 +16,10 @@
 
 #define FPS 120
 
-#define DIFF_DEF 0.02
+#define DIFF_DEF 0.01
 #define VISC_DEF 10.0
 #define PARTICLE_SIZE_DEF 2
-#define RANDOM_SPLAT_COUNT 200
+#define RANDOM_SPLAT_COUNT 20
 
 #define STD_FONT_SIZE 20
 
@@ -33,18 +33,25 @@ double rand_double(double start, double end) {
     return lin_interpolation(rand(), 0, RAND_MAX, start, end);
 }
 
-int rand_int(int start, int end) {
-    return (rand() % (end - start + 1)) + start; 
-} 
-
 void random_spawn(Fluid &fluid, int splats) {
     for (int i = 0; i < splats; i++) {
-        int index_x = rand_int(3, fluid.nx - 3); 
-        int index_y = rand_int(3, fluid.nx - 3); 
+        int index_x = GetRandomValue(3, fluid.nx - 3); 
+        int index_y = GetRandomValue(3, fluid.nx - 3); 
 
         fluid.add_density(index_x, index_y, rand_double(0.5, 1.0));
         fluid.add_velocity(index_x, index_y, rand_double(0.5, 1.0), rand_double(0.5, 1.0));
     }
+}
+
+Color colour_lin_interpolate(double value, Color a, Color b) {
+    value = constrain(value, 0, 1);
+
+    return (Color) {
+        .r = (unsigned char) (fmin(a.r, b.r) + abs(a.r - b.r) * value),
+        .g = (unsigned char) (fmin(a.g, b.g) + abs(a.g - b.g) * value),
+        .b = (unsigned char) (fmin(a.b, b.b) + abs(a.b - b.b) * value),
+        .a = (unsigned char) (fmin(a.a, b.a) + abs(a.a - b.a) * value),
+    };
 }
 
 void test_with_print() {
@@ -96,7 +103,8 @@ int main() {
     float visc = VISC_DEF;
     float diff = DIFF_DEF;
     Color colour = ORANGE;
-    bool blend = true; 
+    bool blend = true;
+    bool colour_change = false;
 
     int timesteps = 0;
     int fps_sum = 0;
@@ -125,6 +133,11 @@ int main() {
         fluid.render_density(scale, colour, particle_size);
         if (blend) EndBlendMode();
 
+        if (colour_change) {
+            printf("NOT IMPLEMENTED: automatic colour change is not implemented\n");
+            colour_change = false;
+        };
+
         fluid.fade_density(0.001);
 
         DrawFPS(GetScreenWidth() - 100, 10);
@@ -146,7 +159,10 @@ int main() {
         DrawText("Additive Blending", 920, 630, STD_FONT_SIZE, WHITE);
         GuiCheckBox((Rectangle) { 1120, 630, 20, 20 }, NULL, &blend);
 
-        if (GuiButton((Rectangle) { 920, 680, 150, 40 }, "Random splat")) {
+        DrawText("Rave", 920, 680, STD_FONT_SIZE, WHITE);
+        GuiCheckBox((Rectangle) { 1120, 680, 20, 20 }, NULL, &colour_change);
+
+        if (GuiButton((Rectangle) { 920, 730, 200, 40 }, "Random splat")) {
             for (int i = 0; i < 5; i++)
                 random_spawn(fluid, RANDOM_SPLAT_COUNT);
         }

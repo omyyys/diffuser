@@ -13,6 +13,7 @@ struct Matrix_Vector {
 };
 
 double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
+double constrain(double value, double range_start, double range_end);
 
 class Fluid {
     public:
