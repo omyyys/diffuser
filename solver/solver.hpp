@@ -6,7 +6,17 @@
 #include "../raylib/include/raylib.h"
 #undef Matrix
 
-typedef std::vector<std::vector<double>> Matrix;
+class Matrix {
+    public:
+    
+    int rows, cols;
+    std::vector<std::vector<double>> elements;
+
+    Matrix() = default;
+    Matrix(int rows, int cols);
+    std::vector<double> operator[] (int index) const; 
+    std::vector<double>& operator[] (int index); 
+};
 
 struct Matrix_Vector {
     Matrix x, y;

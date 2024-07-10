@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <vector>
 
 #define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
@@ -37,6 +38,20 @@ bool double_eq(double a, double b, double eps = 1e-5) {
     return fabs(a - b) < eps;
 }
 
+Matrix::Matrix(int _rows, int _cols) {
+    rows = _rows;
+    cols = _cols;
+    elements = std::vector(_rows, std::vector<double>(_cols, 0));
+}
+
+std::vector<double> Matrix::operator[] (int index) const {
+    return elements[index];
+}
+
+std::vector<double>& Matrix::operator[] (int index) {
+    return elements[index];
+}
+
 Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     nx = _nx;
     diff = _diff;
@@ -44,17 +59,17 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     dt = _dt;
     iter = 20;
 
-    s = std::vector(nx, std::vector<double>(nx, 0));
-    density = std::vector(nx, std::vector<double>(nx, 0));
+    s = Matrix(nx, nx);
+    density = Matrix(nx, nx);
 
     v = {
-        .x = std::vector(nx, std::vector<double>(nx, 0)),
-        .y = std::vector(nx, std::vector<double>(nx, 0)) 
+        .x = Matrix(nx, nx),
+        .y = Matrix(nx, nx)
     };
 
     v0 = {
-        .x = std::vector(nx, std::vector<double>(nx, 0)),
-        .y = std::vector(nx, std::vector<double>(nx, 0)) 
+        .x = Matrix(nx, nx),
+        .y = Matrix(nx, nx)
     };
 }
 
@@ -214,11 +229,11 @@ void Fluid::print_density(FILE *f) {
 }
 
 void Fluid::reset() {
-    for (auto& vec : s) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : density) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : s.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : density.elements) std::fill(vec.begin(), vec.end(), 0);
 
-    for (auto& vec : v.x) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v.y) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v0.x) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v0.y) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v.y.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v0.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : v0.y.elements) std::fill(vec.begin(), vec.end(), 0);
 }
