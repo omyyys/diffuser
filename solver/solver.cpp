@@ -95,7 +95,7 @@ void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a) {
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < nx - 1; i++) {
             for (int j = 1; j < nx - 1; j++) {
-                x[i][j] =  ((x0[i][j]) + a *
+                x[i][j] =  (x0[i][j] + a *
                            (x[i+1][j] +
                             x[i-1][j] +
                             x[i][j+1] +
