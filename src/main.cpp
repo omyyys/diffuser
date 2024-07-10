@@ -99,7 +99,6 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
 
 int main() {
     srand(time(NULL));
-    int gui_edge;
 
     int nx = 80;
     int scale = WIDTH / nx; 
@@ -128,7 +127,8 @@ int main() {
     SetTargetFPS(FPS);
 
     while (!WindowShouldClose()) {
-        gui_edge = GetScreenWidth() - 280;
+        if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) 
+            SetWindowSize(WIDTH + GUI_WIDTH, HEIGHT);
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -156,32 +156,32 @@ int main() {
 
         DrawFPS(GetScreenWidth() - 100, 10);
 
-        DrawText("Viscosity", (float) gui_edge, 50, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { (float) gui_edge, 80, 200, 25 }, "0", "10", &visc, 0.0, 10.0);
+        DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "10", &visc, 0.0, 10.0);
         fluid.visc = visc;
 
-        DrawText("Diffusion", gui_edge, 140, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { (float) gui_edge, 170, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
+        DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
         fluid.diff = diff;
 
-        DrawText("Size", (float) gui_edge, 230, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { (float) gui_edge, 260, 200, 25 }, "0", "25", &particle_size, 0.0, 25.0);
+        DrawText("Size", 920, 230, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 260, 200, 25 }, "0", "25", &particle_size, 0.0, 25.0);
 
-        DrawText("Colour", (float) gui_edge, 320, STD_FONT_SIZE, WHITE);
-        GuiColorPicker((Rectangle) { (float) gui_edge, 350, 200, 200 }, NULL, &colour);
+        DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
+        GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &colour);
 
-        DrawText("Additive Blending", (float) gui_edge, 610, STD_FONT_SIZE, WHITE);
-        GuiCheckBox((Rectangle) { (float) (gui_edge + 200), 610, 20, 20 }, NULL, &blend);
+        DrawText("Additive Blending", 920, 610, STD_FONT_SIZE, WHITE);
+        GuiCheckBox((Rectangle) { 1120, 610, 20, 20 }, NULL, &blend);
 
-        DrawText("Auto Colours", (float) gui_edge, 660, STD_FONT_SIZE, WHITE);
-        GuiCheckBox((Rectangle) { (float) (gui_edge + 200), 660, 20, 20 }, NULL, &colour_change);
+        DrawText("Auto Colours", 920, 660, STD_FONT_SIZE, WHITE);
+        GuiCheckBox((Rectangle) { 1120, 660, 20, 20 }, NULL, &colour_change);
 
-        if (GuiButton((Rectangle) { (float) gui_edge, 710, 200, 40 }, "Random splat")) {
+        if (GuiButton((Rectangle) { 920, 710, 200, 40 }, "Random splat")) {
             for (int i = 0; i < 5; i++)
                 random_spawn(fluid, nx);
         }
 
-        DrawRectangleLinesEx((Rectangle) {0, 0, WIDTH, HEIGHT}, 5, WHITE);  
+        // DrawRectangleLinesEx((Rectangle) {0, 0, WIDTH, HEIGHT}, 5, WHITE);  
         
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
         DrawText(TextFormat("grid resolution: %d", nx), 20, 50, STD_FONT_SIZE, WHITE);
