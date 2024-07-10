@@ -29,6 +29,13 @@
 #define HEIGHT WIDTH
 #define GUI_WIDTH 400
 
+typedef enum {
+    DENSITY = 0,
+    VELOCITY,
+    FIELDS_COUNT
+
+} FieldType;
+
 using namespace std;
 
 int resolutions[] = {
@@ -106,10 +113,11 @@ int main() {
     float particle_size = nx / 20.0;
     float visc = VISC_DEF;
     float diff = DIFF_DEF;
-    Color colour = ORANGE;
+    Color colour = {.r = 0, .g = 0, .b = 92, .a = 255};
     bool blend = true;
     bool colour_change = false;
     int current_resolution_index = 1;
+    FieldType rendering_field = DENSITY;
 
     int timesteps = 0;
     int fps_sum = 0;
@@ -135,7 +143,7 @@ int main() {
 
         if (IsKeyPressed(KEY_C)) fluid.reset();
 
-        if (IsKeyPressed(KEY_SPACE)) {
+        if (IsKeyPressed(KEY_R)) {
             current_resolution_index = (current_resolution_index + 1) % (sizeof(resolutions) / sizeof(int));
             nx = resolutions[current_resolution_index];
             fluid = Fluid(nx, diff, visc, 1.0/FPS);
@@ -143,10 +151,16 @@ int main() {
             particle_size = nx / 20.0;
         }
 
+        if (IsKeyPressed(KEY_SPACE))
+            rendering_field = (FieldType) ((rendering_field + 1) % FIELDS_COUNT);
+
         fluid.step();
 
         if (blend) BeginBlendMode(BLEND_ADDITIVE);
-        fluid.render_density(scale, colour, particle_size);
+
+        if (rendering_field == DENSITY) fluid.render_density(scale, colour, particle_size);
+        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size);
+
         if (blend) EndBlendMode();
 
         // Change colour every 5 frames
@@ -186,9 +200,19 @@ int main() {
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
         DrawText(TextFormat("grid resolution: %d", nx), 20, 50, STD_FONT_SIZE, WHITE);
 
-        DrawText("drag mouse to draw fluid", 20, GetScreenHeight() - 110, STD_FONT_SIZE, WHITE);
+        if (rendering_field == DENSITY)
+            DrawText("rendering density", 20, 80, STD_FONT_SIZE, WHITE);
+
+        else if (rendering_field == VELOCITY)
+            DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
+
+        else 
+            DrawText("error: field enum not exhausted", 20, 80, STD_FONT_SIZE, WHITE);
+        
+        DrawText("drag mouse to draw fluid", 20, GetScreenHeight() - 140, STD_FONT_SIZE, WHITE);
+        DrawText("space to switch rendered field", 20, GetScreenHeight() - 110, STD_FONT_SIZE, WHITE);
         DrawText("c to clear screen", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
-        DrawText("space bar to change grid resolution", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+        DrawText("r to change grid resolution", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
         
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
@@ -199,6 +223,7 @@ int main() {
 
                 fluid.add_velocity(round(mouse_pos.x / scale), 
                                    round(mouse_pos.y / scale), 1.0, 1.0);
+                
             }
         } 
  

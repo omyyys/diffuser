@@ -53,6 +53,7 @@ class Fluid {
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
     void render_density(int scale, Color colour, float particle_size);
+    void render_velocity(int scale, Color colour, float line_length);
     void fade_density(double fade);
     void print_density(FILE *out = stdout);
     void reset();

@@ -7,6 +7,7 @@
 
 #define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
+#include "../raylib/include/raymath.h"
 #undef Matrix
 
 #include "solver.hpp"
@@ -167,14 +168,14 @@ void Fluid::project_velocity() {
 }
 
 void Fluid::diffuse_velocity() {
-    double a = dt * visc * (nx-2) * (nx-2);
+    double a = dt * visc * nx * nx;
 
     gauss_seidel(v0.x, v.x, a);
     gauss_seidel(v0.y, v.y, a);
 }
 
 void Fluid::diffuse_density() {
-    double a = dt * diff * (nx-2) * (nx-2);
+    double a = dt * diff * nx * nx;
 
     gauss_seidel(s, density, a);
 }
@@ -206,6 +207,19 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                           get_colour(colour, dens));
+        }
+    }
+}
+
+void Fluid::render_velocity(int scale, Color colour, float line_length) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < nx; j++) {
+            Vector2 position = {.x = (float) (i*scale), .y = (float) (j*scale) };
+            Vector2 velocity = {.x = (float) v.x[i][j], .y = (float) v.y[i][j]};
+            Vector2 velocity_normal = Vector2Scale(Vector2Normalize(velocity), 4*line_length);
+
+            if (Vector2Equals(velocity_normal, Vector2Zero())) DrawPixelV(position, colour);
+            DrawLineEx(position, Vector2Add(velocity_normal, position), 3, colour);
         }
     }
 }
