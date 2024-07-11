@@ -30,8 +30,8 @@ double lin_interpolation(double value, double cur_min, double cur_max, double re
     return res_min + normalised_value * res_range;
 }
 
-Color get_colour(Color base, double dens) { 
-    base.a = lin_interpolation(dens, 0.0, 1.0, 0, 255);
+Color get_colour(Color base, double dens, double min, double max) { 
+    base.a = lin_interpolation(dens, min, max, 0, 255);
     return base;
 }
 
@@ -58,7 +58,6 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     diff = _diff;
     visc = _visc;
     dt = _dt;
-    iter = 20;
 
     s = Matrix(nx, nx);
     density = Matrix(nx, nx);
@@ -90,12 +89,12 @@ void Fluid::set_bnd(Matrix &x) {
     }
 }
 
-void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a) {
+void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a, int iter) {
     double c = 4*a + 1; 
 
     for (int k = 0; k < iter; k++) {
-        for (int i = 1; i < nx - 1; i++) {
-            for (int j = 1; j < nx - 1; j++) {
+        for (int i = 1; i < x.rows - 1; i++) {
+            for (int j = 1; j < x.cols - 1; j++) {
                 x[i][j] =  (x0[i][j] + a *
                            (x[i+1][j] +
                             x[i-1][j] +
@@ -105,6 +104,22 @@ void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a) {
         }
         set_bnd(x);
     }
+}
+
+// https://scicomp.stackexchange.com/questions/21915/discrete-definitions-of-curl-nabla-times-f
+Matrix Fluid::curl(Matrix_Vector field, double h) {
+    Matrix result(field.x.rows, field.x.cols);
+
+    for (int i = 1; i < field.x.rows - 1; i++) {
+        for (int j = 1; j < field.y.rows - 1; j++) {
+            double dv_dx = (field.y[i+1][j] - field.y[i-1][j]) / (2*h);
+            double du_dy = (field.x[i][j+1] - field.x[i][j]) / (2*h);
+
+            result[i][j] = dv_dx - du_dy;
+        }
+    }
+
+    return result;
 }
 
 void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
@@ -206,7 +221,7 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
         for (int j = 0; j < nx; j++) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour(colour, dens));
+                          get_colour(colour, dens, 0, 1));
         }
     }
 }
@@ -220,6 +235,18 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 
             if (Vector2Equals(velocity_normal, Vector2Zero())) DrawPixelV(position, colour);
             DrawLineEx(position, Vector2Add(velocity_normal, position), 3, colour);
+        }
+    }
+}
+
+void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
+    Matrix vorticity = curl(v);
+
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < nx; j++) {
+            double vort = 5*vorticity[i][j];
+            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
+                          get_colour(colour, vort, 0, 0.1));
         }
     }
 }

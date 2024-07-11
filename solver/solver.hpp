@@ -29,7 +29,6 @@ class Fluid {
     public:
 
     int nx;
-    int iter;
     double dt;
     double diff;
     double visc;
@@ -44,7 +43,9 @@ class Fluid {
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
     void set_bnd(Matrix &x);
-    void gauss_seidel(Matrix &x, Matrix &x0, double a);
+
+    static Matrix curl(Matrix_Vector field, double h = 1.0);
+    void gauss_seidel(Matrix &x, Matrix &x0, double a, int iter = 20);
     void advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY);
     void project_velocity();
     void diffuse_velocity();
@@ -54,6 +55,7 @@ class Fluid {
     void add_velocity(int x, int y, double amountX, double amountY);
     void render_density(int scale, Color colour, float particle_size);
     void render_velocity(int scale, Color colour, float line_length);
+    void render_vorticity(int scale, Color colour, float particle_size);
     void fade_density(double fade);
     void print_density(FILE *out = stdout);
     void reset();
