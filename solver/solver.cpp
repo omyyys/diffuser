@@ -106,6 +106,24 @@ void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a, int iter) {
     }
 }
 
+Matrix Fluid::div(Matrix_Vector field, double h) {
+    Matrix result(field.x.rows, field.x.cols);
+
+    for (int i = 1; i < field.x.rows - 1; i++) {
+        for (int j = 1; j < field.y.cols - 1; j++) {
+            result[i][j] = -0.5 * (
+                    field.x[i+1][j] -
+                    field.x[i-1][j] +
+                    field.y[i][j+1] -
+                    field.y[i][j-1]
+
+                ) / h;
+        }
+    }
+
+    return result;
+}
+
 // https://scicomp.stackexchange.com/questions/21915/discrete-definitions-of-curl-nabla-times-f
 Matrix Fluid::curl(Matrix_Vector field, double h) {
     Matrix result(field.x.rows, field.x.cols);
@@ -154,20 +172,9 @@ void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
 }
 
 void Fluid::project_velocity() {
-    for (int j = 1; j < nx - 1; j++) {
-        for (int i = 1; i < nx - 1; i++) {
-            v.y[i][j] = -0.5 * (
-                    v0.x[i+1][j] -
-                    v0.x[i-1][j] +
-                    v0.y[i][j+1] -
-                    v0.y[i][j-1]
-                ) / nx;
+    for (auto& vec : v.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    v.y = div(v0, nx);
 
-            v.x[i][j] = 0;
-        }
-    }
-
-    set_bnd(v.x); 
     set_bnd(v.y);
     gauss_seidel(v.x, v.y, 1);
     
@@ -241,12 +248,13 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     Matrix vorticity = curl(v);
+    set_bnd(vorticity);
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
-            double vort = 5*vorticity[i][j];
+            double vort = vorticity[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour(colour, vort, 0, 0.1));
+                          get_colour(colour, vort, 0, 0.02));
         }
     }
 }

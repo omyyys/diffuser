@@ -17,7 +17,7 @@
 #define FPS 120
 
 #define DIFF_DEF 0.005
-#define VISC_DEF 1.0
+#define VISC_DEF 0.0
 
 #define STD_FONT_SIZE 20
 
@@ -152,8 +152,14 @@ int main() {
             particle_size = nx / 20.0;
         }
 
-        if (IsKeyPressed(KEY_SPACE))
-            rendering_field = (FieldType) ((rendering_field + 1) % FIELDS_COUNT);
+        if (IsKeyPressed(KEY_RIGHT)) {
+            rendering_field = (FieldType) ((rendering_field + 1) % FIELDS_COUNT); 
+
+        } else if (IsKeyPressed(KEY_LEFT)) {
+            rendering_field = (FieldType) ((rendering_field - 1) % FIELDS_COUNT);
+        }
+
+        if (rendering_field < 0) rendering_field = (FieldType) (FIELDS_COUNT-1);
 
         fluid.step();
 
@@ -166,7 +172,7 @@ int main() {
         if (blend) EndBlendMode();
 
         // Change colour every 5 frames
-        if (colour_change && timesteps % 5 == 0) colour = get_colour(timesteps);
+        if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
 
         fluid.fade_density(visc * 0.001);
 
@@ -196,9 +202,7 @@ int main() {
             for (int i = 0; i < 5; i++)
                 random_spawn(fluid, nx);
         }
-
-        // DrawRectangleLinesEx((Rectangle) {0, 0, WIDTH, HEIGHT}, 5, WHITE);  
-        
+   
         DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
         DrawText(TextFormat("grid resolution: %d", nx), 20, 50, STD_FONT_SIZE, WHITE);
 
@@ -212,10 +216,10 @@ int main() {
             DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
 
         else 
-            DrawText("error: field enum not exhausted", 20, 80, STD_FONT_SIZE, WHITE);
+            DrawText(TextFormat("error: field enum not exhausted: %d", rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
         
         DrawText("drag mouse to draw fluid", 20, GetScreenHeight() - 140, STD_FONT_SIZE, WHITE);
-        DrawText("space to switch rendered field", 20, GetScreenHeight() - 110, STD_FONT_SIZE, WHITE);
+        DrawText("arrow keys to switch rendered field", 20, GetScreenHeight() - 110, STD_FONT_SIZE, WHITE);
         DrawText("c to clear screen", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
         DrawText("r to change grid resolution", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
         

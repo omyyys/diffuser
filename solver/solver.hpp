@@ -45,6 +45,8 @@ class Fluid {
     void set_bnd(Matrix &x);
 
     static Matrix curl(Matrix_Vector field, double h = 1.0);
+    static Matrix div(Matrix_Vector field, double h = 1.0);
+
     void gauss_seidel(Matrix &x, Matrix &x0, double a, int iter = 20);
     void advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY);
     void project_velocity();
