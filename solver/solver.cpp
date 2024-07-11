@@ -5,10 +5,8 @@
 #include <cmath>
 #include <vector>
 
-#define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
 #include "../raylib/include/raymath.h"
-#undef Matrix
 
 #include "solver.hpp"
 
@@ -39,17 +37,17 @@ bool double_eq(double a, double b, double eps = 1e-5) {
     return fabs(a - b) < eps;
 }
 
-Matrix::Matrix(int _rows, int _cols) {
+Scalar_Field::Scalar_Field(int _rows, int _cols) {
     rows = _rows;
     cols = _cols;
     elements = std::vector(_rows, std::vector<double>(_cols, 0));
 }
 
-std::vector<double> Matrix::operator[] (int index) const {
+std::vector<double> Scalar_Field::operator[] (int index) const {
     return elements[index];
 }
 
-std::vector<double>& Matrix::operator[] (int index) {
+std::vector<double>& Scalar_Field::operator[] (int index) {
     return elements[index];
 }
 
@@ -59,21 +57,21 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     visc = _visc;
     dt = _dt;
 
-    s = Matrix(nx, nx);
-    density = Matrix(nx, nx);
+    s = Scalar_Field(nx, nx);
+    density = Scalar_Field(nx, nx);
 
     v = {
-        .x = Matrix(nx, nx),
-        .y = Matrix(nx, nx)
+        .x = Scalar_Field(nx, nx),
+        .y = Scalar_Field(nx, nx)
     };
 
     v0 = {
-        .x = Matrix(nx, nx),
-        .y = Matrix(nx, nx)
+        .x = Scalar_Field(nx, nx),
+        .y = Scalar_Field(nx, nx)
     };
 }
 
-void Fluid::set_bnd(Matrix &x) {
+void Fluid::set_bnd(Scalar_Field &x) {
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
             x[i][0] = 0;
@@ -89,7 +87,7 @@ void Fluid::set_bnd(Matrix &x) {
     }
 }
 
-void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a, int iter) {
+void Fluid::gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
     double c = 4*a + 1; 
 
     for (int k = 0; k < iter; k++) {
@@ -106,8 +104,8 @@ void Fluid::gauss_seidel(Matrix &x, Matrix &x0, double a, int iter) {
     }
 }
 
-Matrix Fluid::div(Matrix_Vector field, double h) {
-    Matrix result(field.x.rows, field.x.cols);
+Scalar_Field Fluid::div(Vector_Field field, double h) {
+    Scalar_Field result(field.x.rows, field.x.cols);
 
     for (int i = 1; i < field.x.rows - 1; i++) {
         for (int j = 1; j < field.y.cols - 1; j++) {
@@ -125,8 +123,8 @@ Matrix Fluid::div(Matrix_Vector field, double h) {
 }
 
 // https://scicomp.stackexchange.com/questions/21915/discrete-definitions-of-curl-nabla-times-f
-Matrix Fluid::curl(Matrix_Vector field, double h) {
-    Matrix result(field.x.rows, field.x.cols);
+Scalar_Field Fluid::curl(Vector_Field field, double h) {
+    Scalar_Field result(field.x.rows, field.x.cols);
 
     for (int i = 1; i < field.x.rows - 1; i++) {
         for (int j = 1; j < field.y.rows - 1; j++) {
@@ -140,7 +138,7 @@ Matrix Fluid::curl(Matrix_Vector field, double h) {
     return result;
 }
 
-void Fluid::advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY) {
+void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY) {
     int ix, iy;
 
     double dtx = dt * (nx - 2);
@@ -247,7 +245,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 }
 
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
-    Matrix vorticity = curl(v);
+    Scalar_Field vorticity = curl(v);
     set_bnd(vorticity);
 
     for (int i = 0; i < nx; i++) {

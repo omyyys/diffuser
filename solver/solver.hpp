@@ -2,28 +2,37 @@
 #include <cstdio>
 #include <vector>
 
-#define Matrix Raylib_Matrix
 #include "../raylib/include/raylib.h"
-#undef Matrix
 
-class Matrix {
+double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
+double constrain(double value, double range_start, double range_end);
+
+class Scalar_Field {
     public:
     
     int rows, cols;
     std::vector<std::vector<double>> elements;
 
-    Matrix() = default;
-    Matrix(int rows, int cols);
+    Scalar_Field() = default;
+    Scalar_Field(int rows, int cols);
     std::vector<double> operator[] (int index) const; 
     std::vector<double>& operator[] (int index); 
 };
 
-struct Matrix_Vector {
-    Matrix x, y;
+struct Vector_Field {
+    Scalar_Field x, y;
 };
 
-double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
-double constrain(double value, double range_start, double range_end);
+class Block {
+    public:
+
+    Vector2 position;
+    
+    Block(int x, int y);
+    Block(Vector2 _position);
+
+    void render_block(int scale);
+};
 
 class Fluid {
     public:
@@ -33,22 +42,22 @@ class Fluid {
     double diff;
     double visc;
     
-    Matrix s;
-    Matrix density;
+    Scalar_Field s;
+    Scalar_Field density;
     
-    Matrix_Vector v;
-    Matrix_Vector v0;
+    Vector_Field v;
+    Vector_Field v0;
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
 
-    void set_bnd(Matrix &x);
+    void set_bnd(Scalar_Field &x);
 
-    static Matrix curl(Matrix_Vector field, double h = 1.0);
-    static Matrix div(Matrix_Vector field, double h = 1.0);
+    static Scalar_Field curl(Vector_Field field, double h = 1.0);
+    static Scalar_Field div(Vector_Field field, double h = 1.0);
 
-    void gauss_seidel(Matrix &x, Matrix &x0, double a, int iter = 20);
-    void advect(Matrix &d, Matrix &d0, Matrix &velocX, Matrix &velocY);
+    void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
+    void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY);
     void project_velocity();
     void diffuse_velocity();
     void diffuse_density();

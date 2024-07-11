@@ -3,9 +3,7 @@
 #include <cmath>
 #include <ctime>
 
-#define Matrix Raylib_Matrix 
 #include "../raylib/include/raylib.h"
-#undef Matrix
 
 #define RAYGUI_IMPLEMENTATION
 #include "../raygui/src/raygui.h"
@@ -35,11 +33,11 @@ typedef enum {
     
 } FieldType;
 
-using namespace std;
-
 int resolutions[] = {
     40, 80, 100, 160 
 };
+
+using namespace std;
 
 double rand_double(double start, double end) { 
     return lin_interpolation(rand(), 0, RAND_MAX, start, end);
@@ -93,8 +91,6 @@ void test_with_print() {
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
-    if (mouse_pos.y <= 20 || mouse_pos.y >= HEIGHT - 20) return false;
-
     Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
     Rectangle screen_rect = (Rectangle) { 0, 0, (float) WIDTH, (float) HEIGHT };
 
