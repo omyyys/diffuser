@@ -3,8 +3,6 @@
 #include <cmath>
 #include <ctime>
 
-#include <unistd.h>
-
 #define Matrix Raylib_Matrix 
 #include "../raylib/include/raylib.h"
 #undef Matrix
@@ -108,7 +106,8 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
 int main() {
     srand(time(NULL));
 
-    int nx = 80;
+    int current_resolution_index = 2; 
+    int nx = resolutions[current_resolution_index];
     int scale = WIDTH / nx; 
 
     float particle_size = nx / 20.0;
@@ -116,8 +115,7 @@ int main() {
     float diff = DIFF_DEF;
     Color colour = {.r = 0, .g = 0, .b = 92, .a = 255};
     bool blend = true;
-    bool colour_change = false;
-    int current_resolution_index = 1;
+    bool colour_change = false; 
     FieldType rendering_field = DENSITY;
 
     int timesteps = 0;
@@ -174,7 +172,7 @@ int main() {
         // Change colour every 5 frames
         if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
 
-        fluid.fade_density(visc * 0.001);
+        fluid.fade_density(5e-5 + visc * 0.001);
 
         DrawFPS(GetScreenWidth() - 100, 10);
 
