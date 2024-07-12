@@ -28,7 +28,6 @@
 typedef enum {
     DENSITY = 0,
     VELOCITY,
-    VORTICITY,
     FIELDS_COUNT,
     
 } FieldType;
@@ -116,9 +115,9 @@ int main() {
 
     int timesteps = 0;
     int fps_sum = 0;
-
+    
     Fluid fluid(nx, diff, visc, 1.0/FPS);
-
+    
     if (TEST) {
         test_with_print();
         return 0;
@@ -160,10 +159,11 @@ int main() {
         if (blend) BeginBlendMode(BLEND_ADDITIVE);
 
         if (rendering_field == DENSITY) fluid.render_density(scale, colour, particle_size);
-        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size);
-        else if (rendering_field == VORTICITY) fluid.render_vorticity(scale, colour, particle_size); 
+        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size); 
 
         if (blend) EndBlendMode();
+
+        for (Block &block : fluid.blocks) block.render_block(scale);
 
         // Change colour every 5 frames
         if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
@@ -206,9 +206,6 @@ int main() {
         else if (rendering_field == VELOCITY)
             DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
 
-        else if (rendering_field == VORTICITY)
-            DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
-
         else 
             DrawText(TextFormat("error: field enum not exhausted: %d", rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
         
@@ -225,10 +222,15 @@ int main() {
                                   round(mouse_pos.y / scale), 1.0);
 
                 fluid.add_velocity(round(mouse_pos.x / scale), 
-                                   round(mouse_pos.y / scale), 1.0, 1.0);
-                
+                                   round(mouse_pos.y / scale), 5.0, 5.0); 
             }
-        } 
+
+        }
+
+        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+            Vector2 mouse_pos = GetMousePosition();
+            fluid.blocks.push_back(Block(mouse_pos.x / scale, mouse_pos.y / scale));
+        }
  
         EndDrawing();
 

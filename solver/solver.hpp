@@ -49,22 +49,26 @@ class Fluid {
     Vector_Field v;
     Vector_Field v0;
 
+    std::vector<Block> blocks;
+
     Fluid() = default;
-    Fluid(int _nx, double _diff, double _visc, double _dt);
+    Fluid(int _nx, double _diff, double _visc, double _dt, std::vector<Block> blocks = {});
  
     static Scalar_Field curl(Vector_Field field, double h = 1.0);
     static Scalar_Field div(Vector_Field field, double h = 1.0);
-
+    
+    void flip_flow_direction(int x, int y);
+    void add_density(int x, int y, double amount); 
+    void add_velocity(int x, int y, double amountX, double amountY);
     void resolve_block_collision(Block block);
-    void set_bnd(Scalar_Field &x, std::vector<Block> blocks = {});
+
+    void set_bnd(Scalar_Field &x);
     void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
     void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY);
     void project_velocity();
     void diffuse_velocity();
     void diffuse_density();
-    void step();
-    void add_density(int x, int y, double amount); 
-    void add_velocity(int x, int y, double amountX, double amountY);
+    void step(); 
     void render_density(int scale, Color colour, float particle_size);
     void render_velocity(int scale, Color colour, float line_length);
     void render_vorticity(int scale, Color colour, float particle_size);
