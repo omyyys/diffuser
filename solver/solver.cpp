@@ -10,6 +10,10 @@
 
 #include "solver.hpp"
 
+inline bool double_eq(double a, double b, double eps = 1e-5) {
+    return fabs(a - b) < eps;
+}
+
 double constrain(double value, double range_start, double range_end) {
     value = (value > range_end) ? range_end : value;
     value = (value < range_start) ? range_start : value;
@@ -28,13 +32,24 @@ double lin_interpolation(double value, double cur_min, double cur_max, double re
     return res_min + normalised_value * res_range;
 }
 
-Color get_colour(Color base, double dens, double min, double max) { 
-    base.a = lin_interpolation(dens, min, max, 0, 255);
+Color get_colour_w_alpha(Color base, double val, double min, double max) { 
+    base.a = lin_interpolation(val, min, max, 0, 255);
     return base;
 }
 
-bool double_eq(double a, double b, double eps = 1e-5) {
-    return fabs(a - b) < eps;
+Color get_colour_temp(Color color, double val, double min, double max) {
+    if (double_eq(val, 0.0, 1e-7)) return BLACK;
+
+    Vector3 complement_hsv = ColorToHSV(color);
+    complement_hsv.x = ((int) complement_hsv.x + 180) % 360;
+    Color complement = ColorFromHSV(complement_hsv.x, complement_hsv.y, complement_hsv.z); 
+
+    return (Color){
+        (unsigned char) lin_interpolation(val, min, max, complement.r, color.r),
+        (unsigned char) lin_interpolation(val, min, max, complement.g, color.g),
+        (unsigned char) lin_interpolation(val, min, max, complement.b, color.b),
+        255 
+    };
 }
 
 Scalar_Field::Scalar_Field(int _rows, int _cols) {
@@ -49,18 +64,6 @@ std::vector<double> Scalar_Field::operator[] (int index) const {
 
 std::vector<double>& Scalar_Field::operator[] (int index) {
     return elements[index];
-}
-
-Block::Block(int x, int y) {
-    position = (Vector2) {.x = (float) x, .y = (float) y};
-}
-
-Block::Block(Vector2 _position) {
-    position = _position;
-}
-
-void Block::render_block(int scale) {
-    DrawRectangle(position.x * scale, position.y * scale, scale, scale, WHITE);
 }
 
 Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
@@ -83,18 +86,18 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-void Fluid::set_bnd(Scalar_Field &x) {
+void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
-            x[i][0] = 0;
-            x[i][nx-1] = 0;
+            x[i][0] = bnd_val;
+            x[i][nx-1] = bnd_val;
         }
     }
 
     for (int _ = 0; _ < nx; _++) {
         for (int j = 0; j < nx; j++) {
-            x[0][j] = 0;
-            x[nx-1][j] = 0;
+            x[0][j] = bnd_val;
+            x[nx-1][j] = bnd_val;
         }
     }
 }
@@ -238,7 +241,7 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
         for (int j = 0; j < nx; j++) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour(colour, dens, 0, 1));
+                          get_colour_w_alpha(colour, dens, 0, 1));
         }
     }
 }
@@ -263,8 +266,8 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             double vort = vorticity[i][j];
-            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour(colour, vort, 0, 0.02));
+            DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
+                          get_colour_temp(colour, vort, -0.000005, 0.000005));
         }
     }
 }

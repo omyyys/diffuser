@@ -4,6 +4,7 @@
 #include <ctime>
 
 #include "../raylib/include/raylib.h"
+#include "../raylib/include/raymath.h"
 
 #define RAYGUI_IMPLEMENTATION
 #include "../raygui/src/raygui.h"
@@ -34,7 +35,7 @@ typedef enum {
 } FieldType;
 
 int resolutions[] = {
-    40, 80, 100, 160 
+    80, 100, 160 
 };
 
 using namespace std;
@@ -102,7 +103,7 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
 int main() {
     srand(time(NULL));
 
-    int current_resolution_index = 2; 
+    int current_resolution_index = 1; 
     int nx = resolutions[current_resolution_index];
     int scale = WIDTH / nx; 
 
@@ -128,6 +129,8 @@ int main() {
     InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "test");
     GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
+
+    Vector2 pmouse = GetMousePosition(); 
 
     while (!WindowShouldClose()) {
         if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) 
@@ -180,8 +183,10 @@ int main() {
         GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
         fluid.diff = diff;
 
+        /*
         DrawText("Size", 920, 230, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 260, 200, 25 }, "0", "25", &particle_size, 0.0, 25.0);
+        GuiSlider((Rectangle) { 920, 260, 200, 25 }, "0", "10", &particle_size, 0.0, 10.0);
+        */
 
         DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
         GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &colour);
@@ -219,6 +224,8 @@ int main() {
         
         if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
             Vector2 mouse_pos = GetMousePosition();
+            Vector2 mouse_travelled = Vector2Subtract(mouse_pos, pmouse);
+            (void) mouse_travelled;
             
             if (mouse_is_in_window(mouse_pos, scale)) {
                 fluid.add_density(round(mouse_pos.x / scale), 
@@ -237,6 +244,8 @@ int main() {
             fps_sum += GetFPS();
             if (timesteps >= BENCHMARK_TIMESTEPS) break;
         }
+
+        pmouse = GetMousePosition();
     }
 
     CloseWindow();

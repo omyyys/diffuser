@@ -23,18 +23,6 @@ struct Vector_Field {
     Scalar_Field x, y;
 };
 
-// Not fully implemented functionality
-class Block {
-    public:
-
-    Vector2 position;
-    
-    Block(int x, int y);
-    Block(Vector2 _position);
-
-    void render_block(int scale);
-};
-
 class Fluid {
     public:
 
@@ -58,7 +46,7 @@ class Fluid {
     void add_density(int x, int y, double amount); 
     void add_velocity(int x, int y, double amountX, double amountY);
 
-    void set_bnd(Scalar_Field &x);
+    void set_bnd(Scalar_Field &x, double bnd_val = 0.0);
     void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
     void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY);
     void project_velocity();
