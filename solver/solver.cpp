@@ -63,7 +63,7 @@ void Block::render_block(int scale) {
     DrawRectangle(position.x * scale, position.y * scale, scale, scale, WHITE);
 }
 
-Fluid::Fluid(int _nx, double _diff, double _visc, double _dt, std::vector<Block> _blocks) {
+Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     nx = _nx;
     diff = _diff;
     visc = _visc;
@@ -81,36 +81,9 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt, std::vector<Block>
         .x = Scalar_Field(nx, nx),
         .y = Scalar_Field(nx, nx)
     };
-
-    blocks = _blocks;
-}
-
-void Fluid::flip_flow_direction(int x, int y) {
-    v.x[x][y] *= -1;
-    v.y[x][y] *= -1;
-    density[x][y] *= -1;
-}
-
-void Fluid::resolve_block_collision(Block block) {
-    Vector2 position = block.position;
-
-    if ((block.position.x >= nx-1 || block.position.y >= nx-1) || 
-        (block.position.x <= 0 || block.position.y <= 1)) return;
-
-    v.x[position.x][position.y] = 0;
-    v.y[position.x][position.y] = 0;
-    density[position.x][position.y] = 0;
-
-    flip_flow_direction(position.x, position.y - 1); 
-    flip_flow_direction(position.x - 1, position.y);
-    flip_flow_direction(position.x + 1, position.y);
-    flip_flow_direction(position.x, position.y + 1);
 }
 
 void Fluid::set_bnd(Scalar_Field &x) {
-    for (Block &block : blocks)
-        resolve_block_collision(block); 
-
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
             x[i][0] = 0;
@@ -322,6 +295,4 @@ void Fluid::reset() {
     for (auto& vec : v.y.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : v0.x.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : v0.y.elements) std::fill(vec.begin(), vec.end(), 0);
-
-    blocks = std::vector<Block>();
 }

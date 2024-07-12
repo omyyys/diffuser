@@ -163,8 +163,6 @@ int main() {
 
         if (blend) EndBlendMode();
 
-        for (Block &block : fluid.blocks) block.render_block(scale);
-
         // Change colour every 5 frames
         if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
 
@@ -225,11 +223,6 @@ int main() {
                                    round(mouse_pos.y / scale), 5.0, 5.0); 
             }
 
-        }
-
-        if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
-            Vector2 mouse_pos = GetMousePosition();
-            fluid.blocks.push_back(Block(mouse_pos.x / scale, mouse_pos.y / scale));
         }
  
         EndDrawing();
