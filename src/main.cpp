@@ -28,6 +28,7 @@
 typedef enum {
     DENSITY = 0,
     VELOCITY,
+    VORTICITY,
     FIELDS_COUNT,
     
 } FieldType;
@@ -159,7 +160,8 @@ int main() {
         if (blend) BeginBlendMode(BLEND_ADDITIVE);
 
         if (rendering_field == DENSITY) fluid.render_density(scale, colour, particle_size);
-        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size); 
+        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size);
+        else if (rendering_field == VORTICITY) fluid.render_vorticity(scale, colour, particle_size);     
 
         if (blend) EndBlendMode();
 
@@ -204,6 +206,9 @@ int main() {
         else if (rendering_field == VELOCITY)
             DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
 
+        else if (rendering_field == VORTICITY)
+            DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
+
         else 
             DrawText(TextFormat("error: field enum not exhausted: %d", rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
         
@@ -220,7 +225,7 @@ int main() {
                                   round(mouse_pos.y / scale), 1.0);
 
                 fluid.add_velocity(round(mouse_pos.x / scale), 
-                                   round(mouse_pos.y / scale), 5.0, 5.0); 
+                                   round(mouse_pos.y / scale), 3.0, 3.0); 
             }
 
         }
