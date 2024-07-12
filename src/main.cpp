@@ -168,7 +168,7 @@ int main() {
         // Change colour every 5 frames
         if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
 
-        fluid.fade_density(5e-5 + visc * 0.001);
+        fluid.fade_density(5e-4 + visc * 0.001);
 
         DrawFPS(GetScreenWidth() - 100, 10);
 

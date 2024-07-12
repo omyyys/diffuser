@@ -51,6 +51,14 @@ std::vector<double>& Scalar_Field::operator[] (int index) {
     return elements[index];
 }
 
+Block::Block(int x, int y) {
+    position = (Vector2) {.x = (float) x, .y = (float) y};
+}
+
+Block::Block(Vector2 _position) {
+    position = _position;
+}
+
 Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     nx = _nx;
     diff = _diff;
@@ -71,7 +79,53 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-void Fluid::set_bnd(Scalar_Field &x) {
+void Fluid::resolve_block_collision(Block block) {
+    Vector2 position = block.position;
+
+    if ((block.position.x >= nx-1 || block.position.y >= nx-1) || 
+        (block.position.x <= 0 || block.position.y <= 1)) return;
+
+    v.x[position.x][position.y] = 0;
+    v.y[position.x][position.y] = 0;
+    density[position.x][position.y] = 0;
+
+    v.x[position.x - 1][position.y - 1] *= -1;
+    v.y[position.x - 1][position.y - 1] *= -1;
+    density[position.x - 1][position.y - 1] *= -1;
+        
+    v.x[position.x][position.y - 1] *= -1;
+    v.y[position.x][position.y - 1] *= -1;
+    density[position.x][position.y - 1] *= -1;
+        
+    v.x[position.x + 1][position.y - 1] *= -1;
+    v.y[position.x + 1][position.y - 1] *= -1;
+    density[position.x + 1][position.y - 1] *= -1;
+        
+    v.x[position.x - 1][position.y] *= -1;
+    v.y[position.x - 1][position.y] *= -1;
+    density[position.x - 1][position.y] *= -1;
+
+    v.x[position.x + 1][position.y] *= -1;
+    v.y[position.x + 1][position.y] *= -1;
+    density[position.x + 1][position.y] *= -1;
+
+    v.x[position.x - 1][position.y + 1] *= -1;
+    v.y[position.x - 1][position.y + 1] *= -1;
+    density[position.x - 1][position.y + 1] *= -1;
+
+    v.x[position.x][position.y + 1] *= -1;
+    v.y[position.x][position.y + 1] *= -1;
+    density[position.x][position.y + 1] *= -1;
+
+    v.x[position.x + 1][position.y + 1] *= -1;
+    v.y[position.x + 1][position.y + 1] *= -1;
+    density[position.x + 1][position.y + 1] *= -1;
+}
+
+void Fluid::set_bnd(Scalar_Field &x, std::vector<Block> blocks) {
+    for (Block &block : blocks)
+        resolve_block_collision(block); 
+
     for (int _ = 0; _ < nx; _++) {
         for (int i = 0; i < nx; i++) {
             x[i][0] = 0;

@@ -23,6 +23,7 @@ struct Vector_Field {
     Scalar_Field x, y;
 };
 
+// Not fully implemented functionality
 class Block {
     public:
 
@@ -50,12 +51,12 @@ class Fluid {
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
-
-    void set_bnd(Scalar_Field &x);
-
+ 
     static Scalar_Field curl(Vector_Field field, double h = 1.0);
     static Scalar_Field div(Vector_Field field, double h = 1.0);
 
+    void resolve_block_collision(Block block);
+    void set_bnd(Scalar_Field &x, std::vector<Block> blocks = {});
     void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
     void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY);
     void project_velocity();
