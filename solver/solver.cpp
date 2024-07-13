@@ -266,8 +266,9 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     for (int i = 1; i < nx - 2; i++) {
         for (int j = 1; j < nx - 2; j++) {
             double vort = vorticity[i][j];
+            double colour_rng = visc == 0 ? 0.01 : 0.0005;
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
-                          get_colour_temp(colour, vort, -0.0005, 0.0005));
+                          get_colour_temp(colour, vort, -colour_rng, colour_rng));
         }
     }
 }
