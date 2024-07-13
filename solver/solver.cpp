@@ -38,18 +38,18 @@ Color get_colour_w_alpha(Color base, double val, double min, double max) {
 }
 
 Color get_colour_temp(Color color, double val, double min, double max) {
-    if (double_eq(val, 0.0, 1e-7)) return BLACK;
-
     Vector3 complement_hsv = ColorToHSV(color);
     complement_hsv.x = ((int) complement_hsv.x + 180) % 360;
     Color complement = ColorFromHSV(complement_hsv.x, complement_hsv.y, complement_hsv.z); 
 
-    return (Color){
+    Color c = (Color){
         (unsigned char) lin_interpolation(val, min, max, complement.r, color.r),
         (unsigned char) lin_interpolation(val, min, max, complement.g, color.g),
         (unsigned char) lin_interpolation(val, min, max, complement.b, color.b),
-        255 
+        (unsigned char) lin_interpolation(abs(val), 0, max, 0, 255), 
     };
+
+    return c;
 }
 
 Scalar_Field::Scalar_Field(int _rows, int _cols) {
@@ -237,8 +237,8 @@ void Fluid::add_velocity(int x, int y, double amountX, double amountY) {
 }
 
 void Fluid::render_density(int scale, Color colour, float particle_size) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < nx; j++) {
+    for (int i = 1; i < nx - 1; i++) {
+        for (int j = 1; j < nx - 1; j++) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                           get_colour_w_alpha(colour, dens, 0, 1));
@@ -247,8 +247,8 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
 }
 
 void Fluid::render_velocity(int scale, Color colour, float line_length) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < nx; j++) {
+    for (int i = 1; i < nx - 1; i++) {
+        for (int j = 1; j < nx - 1; j++) {
             Vector2 position = {.x = (float) (i*scale), .y = (float) (j*scale) };
             Vector2 velocity = {.x = (float) v.x[i][j], .y = (float) v.y[i][j]};
             Vector2 velocity_normal = Vector2Scale(Vector2Normalize(velocity), 4*line_length);
@@ -263,11 +263,11 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     Scalar_Field vorticity = curl(v);
     set_bnd(vorticity);
 
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < nx; j++) {
+    for (int i = 1; i < nx - 2; i++) {
+        for (int j = 1; j < nx - 2; j++) {
             double vort = vorticity[i][j];
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
-                          get_colour_temp(colour, vort, -0.000005, 0.000005));
+                          get_colour_temp(colour, vort, -0.0005, 0.0005));
         }
     }
 }

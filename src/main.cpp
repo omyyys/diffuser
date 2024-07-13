@@ -176,7 +176,7 @@ int main() {
         DrawFPS(GetScreenWidth() - 100, 10);
 
         DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "10", &visc, 0.0, 10.0);
+        GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "5", &visc, 0.0, 5.0);
         fluid.visc = visc;
 
         DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
