@@ -11,20 +11,22 @@
  
 #include "../solver/solver.hpp"
 
-#define FPS 120
+constexpr int FPS = 120;
 
-#define DIFF_DEF 0.005
-#define VISC_DEF 0.0
+constexpr double DIFF_DEF = 0.005;
+constexpr double VISC_DEF = 0.0;
 
-#define STD_FONT_SIZE 20
+constexpr int STD_FONT_SIZE = 20;
 
-#define TEST false
-#define BENCHMARK false
-#define BENCHMARK_TIMESTEPS 1000
+constexpr bool TEST = false;
+constexpr bool BENCHMARK = false;
+constexpr int BENCHMARK_TIMESTEPS = 1000;
 
-#define WIDTH 800
-#define HEIGHT WIDTH
-#define GUI_WIDTH 400
+constexpr int WIDTH = 800;
+constexpr int HEIGHT = 800;
+constexpr int GUI_WIDTH = 400;
+
+constexpr int resolutions[] = { 80, 100, 160 };
 
 typedef enum {
     DENSITY = 0,
@@ -34,11 +36,36 @@ typedef enum {
     
 } FieldType;
 
-int resolutions[] = {
-    80, 100, 160 
-};
-
 using namespace std;
+
+void test_with_print() {
+    Fluid fluid1(7, DIFF_DEF, 0.0, 1.0/FPS);
+    Fluid fluid2(7, DIFF_DEF, 10.0, 1.0/FPS);
+
+    fluid1.add_density(2, 1, 1.0);
+    fluid1.add_density(2, 2, 1.0);
+    fluid1.add_density(2, 3, 1.0);
+    fluid1.add_density(2, 4, 1.0);
+
+    for (int i = 0; i < FPS; i++) { 
+        fluid1.step();
+    }
+
+    fluid1.print_density();
+    printf("fluid 1: diff=%lf, visc=%lf, general test\n", fluid1.diff, fluid1.visc);
+
+    fluid2.add_density(2, 1, 1.0);
+    fluid2.add_density(2, 2, 1.0);
+    fluid2.add_density(2, 3, 1.0);
+    fluid2.add_density(2, 4, 1.0);
+
+    for (int i = 0; i < FPS; i++) { 
+        fluid2.step();
+    }
+
+    fluid2.print_density();
+    printf("fluid 2: diff=%lf, visc=%lf, general test\n", fluid2.diff, fluid2.visc);
+}
 
 double rand_double(double start, double end) { 
     return lin_interpolation(rand(), 0, RAND_MAX, start, end);
@@ -60,35 +87,6 @@ Color get_colour(int timesteps) {
         100, 
         60
     );
-}
-
-void test_with_print() {
-    Fluid fluid1(7, DIFF_DEF, 0.0, 1.0/FPS);
-    Fluid fluid2(7, DIFF_DEF, 10.0, 1.0/FPS);
-
-    fluid1.add_density(2, 1, 1.0);
-    fluid1.add_density(2, 2, 1.0);
-    fluid1.add_density(2, 3, 1.0);
-    fluid1.add_density(2, 4, 1.0);
-
-    for (int i = 0; i < 60; i++) { 
-        fluid1.step();
-    }
-
-    fluid1.print_density();
-    printf("fluid 1: diff=%lf, visc=%lf, general test\n", fluid1.diff, fluid1.visc);
-
-    fluid2.add_density(2, 1, 1.0);
-    fluid2.add_density(2, 2, 1.0);
-    fluid2.add_density(2, 3, 1.0);
-    fluid2.add_density(2, 4, 1.0);
-
-    for (int i = 0; i < 60; i++) { 
-        fluid2.step();
-    }
-
-    fluid2.print_density();
-    printf("fluid 2: diff=%lf, visc=%lf, general test\n", fluid2.diff, fluid2.visc);
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
@@ -130,11 +128,15 @@ int main() {
     GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
 
-    Vector2 pmouse = GetMousePosition(); 
+    Vector2 mouse = Vector2Zero();
+    Vector2 prev_mouse = Vector2Zero(); 
 
     while (!WindowShouldClose()) {
         if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) 
             SetWindowSize(WIDTH + GUI_WIDTH, HEIGHT);
+
+        prev_mouse = mouse;
+        mouse = GetMousePosition();
 
         BeginDrawing();
         ClearBackground(BLACK);
@@ -222,30 +224,24 @@ int main() {
         DrawText("c to clear screen", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
         DrawText("r to change grid resolution", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
         
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-            Vector2 mouse_pos = GetMousePosition();
-            Vector2 mouse_travelled = Vector2Subtract(mouse_pos, pmouse);
-            (void) mouse_travelled;
-            
-            if (mouse_is_in_window(mouse_pos, scale)) {
-                fluid.add_density(round(mouse_pos.x / scale), 
-                                  round(mouse_pos.y / scale), 1.0);
+        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mouse_is_in_window(mouse, scale)) { 
+            Vector2 mouse_travelled = Vector2Subtract(mouse, prev_mouse);
 
-                fluid.add_velocity(round(mouse_pos.x / scale), 
-                                   round(mouse_pos.y / scale), 3.0, 3.0); 
-            }
+            fluid.add_density(round(mouse.x / scale), 
+                              round(mouse.y / scale), 1.0);
 
+            fluid.add_velocity(round(mouse.x / scale), 
+                               round(mouse.y / scale), mouse_travelled.x, mouse_travelled.y); 
         }
  
         EndDrawing();
 
         timesteps++;
+
         if (BENCHMARK) {
             fps_sum += GetFPS();
             if (timesteps >= BENCHMARK_TIMESTEPS) break;
         }
-
-        pmouse = GetMousePosition();
     }
 
     CloseWindow();

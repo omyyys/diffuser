@@ -10,7 +10,7 @@
 
 #include "solver.hpp"
 
-inline bool double_eq(double a, double b, double eps = 1e-5) {
+inline bool double_eq(double a, double b, double eps = 1e-6) {
     return fabs(a - b) < eps;
 }
 
@@ -42,14 +42,12 @@ Color get_colour_temp(Color color, double val, double min, double max) {
     complement_hsv.x = ((int) complement_hsv.x + 180) % 360;
     Color complement = ColorFromHSV(complement_hsv.x, complement_hsv.y, complement_hsv.z); 
 
-    Color c = (Color){
+    return (Color){
         (unsigned char) lin_interpolation(val, min, max, complement.r, color.r),
         (unsigned char) lin_interpolation(val, min, max, complement.g, color.g),
         (unsigned char) lin_interpolation(val, min, max, complement.b, color.b),
         (unsigned char) lin_interpolation(abs(val), 0, max, 0, 255), 
     };
-
-    return c;
 }
 
 Scalar_Field::Scalar_Field(int _rows, int _cols) {
@@ -153,7 +151,7 @@ Scalar_Field Fluid::curl(Vector_Field field, double h) {
     return result;
 }
 
-void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scalar_Field &velocY) {
+void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &v_x, Scalar_Field &v_y) {
     int ix, iy;
 
     double dtx = dt * (nx - 2);
@@ -164,11 +162,11 @@ void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &velocX, Scal
 
     for (double j = 1; j < nx - 1; j++) { 
         for (double i = 1; i < nx - 1; i++) {
-            x = constrain(i - dtx * velocX[i][j], 0.5, nx + 0.5);
-            ix = floorf(x); 
+            x = constrain(i - dtx * v_x[i][j], 0.5, nx + 0.5);
+            ix = constrain(floorf(x), 0, nx-2); 
 
-            y = constrain(j - dty * velocY[i][j], 0.5, nx + 0.5);
-            iy = floorf(y); 
+            y = constrain(j - dty * v_y[i][j], 0.5, nx + 0.5);
+            iy = constrain(floorf(y), 0, nx-2); 
                 
             s1 = x - ix; 
             s0 = 1.0 - s1; 
@@ -227,13 +225,13 @@ void Fluid::step() {
     advect(density, s, v.x, v.y);
 }
 
-void Fluid::add_density(int x, int y, double amount) {
-    density[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amount; 
+void Fluid::add_density(int x, int y, double amt) {
+    density[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt; 
 }
 
-void Fluid::add_velocity(int x, int y, double amountX, double amountY) {    
-    v.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amountX;
-    v.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amountY;
+void Fluid::add_velocity(int x, int y, double amt_x, double amt_y) {    
+    v.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
+    v.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
 }
 
 void Fluid::render_density(int scale, Color colour, float particle_size) {
@@ -263,8 +261,8 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     Scalar_Field vorticity = curl(v);
     set_bnd(vorticity);
 
-    for (int i = 1; i < nx - 2; i++) {
-        for (int j = 1; j < nx - 2; j++) {
+    for (int i = 2; i < nx - 2; i++) {
+        for (int j = 2; j < nx - 2; j++) {
             double vort = vorticity[i][j];
             double colour_rng = visc == 0 ? 0.01 : 0.0005;
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 

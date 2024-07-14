@@ -43,8 +43,8 @@ class Fluid {
     static Scalar_Field curl(Vector_Field field, double h = 1.0);
     static Scalar_Field div(Vector_Field field, double h = 1.0);
 
-    void add_density(int x, int y, double amount); 
-    void add_velocity(int x, int y, double amountX, double amountY);
+    void add_density(int x, int y, double amt); 
+    void add_velocity(int x, int y, double amt_x, double amt_y);
 
     void set_bnd(Scalar_Field &x, double bnd_val = 0.0);
     void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
