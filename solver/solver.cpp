@@ -163,7 +163,7 @@ void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &v_x, Scalar_
     for (double j = 1; j < nx - 1; j++) { 
         for (double i = 1; i < nx - 1; i++) {
             x = constrain(i - dtx * v_x[i][j], 0.5, nx + 0.5);
-            ix = constrain(floorf(x), 0, nx-2); 
+            ix = constrain(floorf(x), 0, nx-2);
 
             y = constrain(j - dty * v_y[i][j], 0.5, nx + 0.5);
             iy = constrain(floorf(y), 0, nx-2); 

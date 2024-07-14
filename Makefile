@@ -1,6 +1,6 @@
 CC=g++
 CPPFLAGS=-ggdb -fno-stack-protector -Wall -Wextra -Wno-missing-field-initializers -std=c++20 
-OPT=-Ofast -funroll-loops -fno-signed-zeros -fno-trapping-math -mtune=native -march=native 
+OPT=-Ofast -funroll-loops -fno-signed-zeros -fno-trapping-math -mtune=native -march=native  
 CPPLIBS=-L./raylib/lib -Wl,-rpath ./raylib/lib/ -lraylib -lm
 
 all: diffuser
