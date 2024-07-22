@@ -38,35 +38,6 @@ typedef enum {
 
 using namespace std;
 
-void test_with_print() {
-    Fluid fluid1(7, DIFF_DEF, 0.0, 1.0/FPS);
-    Fluid fluid2(7, DIFF_DEF, 10.0, 1.0/FPS);
-
-    fluid1.add_density(2, 1, 1.0);
-    fluid1.add_density(2, 2, 1.0);
-    fluid1.add_density(2, 3, 1.0);
-    fluid1.add_density(2, 4, 1.0);
-
-    for (int i = 0; i < FPS; i++) { 
-        fluid1.step();
-    }
-
-    fluid1.print_density();
-    printf("fluid 1: diff=%lf, visc=%lf, general test\n", fluid1.diff, fluid1.visc);
-
-    fluid2.add_density(2, 1, 1.0);
-    fluid2.add_density(2, 2, 1.0);
-    fluid2.add_density(2, 3, 1.0);
-    fluid2.add_density(2, 4, 1.0);
-
-    for (int i = 0; i < FPS; i++) { 
-        fluid2.step();
-    }
-
-    fluid2.print_density();
-    printf("fluid 2: diff=%lf, visc=%lf, general test\n", fluid2.diff, fluid2.visc);
-}
-
 double rand_double(double start, double end) { 
     return lin_interpolation(rand(), 0, RAND_MAX, start, end);
 }
@@ -105,7 +76,7 @@ int main() {
     int nx = resolutions[current_resolution_index];
     int scale = WIDTH / nx; 
 
-    float particle_size = nx / 20.0;
+    float particle_size = 5.0;    
     float visc = VISC_DEF;
     float diff = DIFF_DEF;
     Color colour = {.r = 0, .g = 0, .b = 92, .a = 255};
@@ -117,11 +88,6 @@ int main() {
     int fps_sum = 0;
     
     Fluid fluid(nx, diff, visc, 1.0/FPS);
-    
-    if (TEST) {
-        test_with_print();
-        return 0;
-    }
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
     InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "test");
@@ -148,7 +114,6 @@ int main() {
             nx = resolutions[current_resolution_index];
             fluid = Fluid(nx, diff, visc, 1.0/FPS);
             scale = WIDTH / nx;
-            particle_size = nx / 20.0;
         }
 
         if (IsKeyPressed(KEY_RIGHT)) {
@@ -161,19 +126,24 @@ int main() {
         if (rendering_field < 0) rendering_field = (FieldType) (FIELDS_COUNT-1);
 
         fluid.step();
+        fluid.fade_density(5e-4 + visc * 0.001);
 
         if (blend) BeginBlendMode(BLEND_ADDITIVE);
 
-        if (rendering_field == DENSITY) fluid.render_density(scale, colour, particle_size);
-        else if (rendering_field == VELOCITY) fluid.render_velocity(scale, colour, particle_size);
-        else if (rendering_field == VORTICITY) fluid.render_vorticity(scale, colour, particle_size);     
+        if (rendering_field == DENSITY) { 
+            fluid.render_density(scale, colour, particle_size);
+
+        } else if (rendering_field == VELOCITY) {
+            fluid.render_velocity(scale, colour, particle_size);
+
+        } else if (rendering_field == VORTICITY) {
+            fluid.render_vorticity(scale, colour, particle_size); 
+        }
 
         if (blend) EndBlendMode();
 
-        // Change colour every 5 frames
-        if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps);
-
-        fluid.fade_density(5e-4 + visc * 0.001);
+        // Change colour every 10 frames
+        if (colour_change && timesteps % 10 == 0) colour = get_colour(timesteps); 
 
         DrawFPS(GetScreenWidth() - 100, 10);
 
@@ -184,11 +154,6 @@ int main() {
         DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
         GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &diff, 0.0, 0.1);
         fluid.diff = diff;
-
-        /*
-        DrawText("Size", 920, 230, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 260, 200, 25 }, "0", "10", &particle_size, 0.0, 10.0);
-        */
 
         DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
         GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &colour);

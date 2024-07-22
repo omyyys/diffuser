@@ -84,39 +84,6 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
-    for (int _ = 0; _ < nx; _++) {
-        for (int i = 0; i < nx; i++) {
-            x[i][0] = bnd_val;
-            x[i][nx-1] = bnd_val;
-        }
-    }
-
-    for (int _ = 0; _ < nx; _++) {
-        for (int j = 0; j < nx; j++) {
-            x[0][j] = bnd_val;
-            x[nx-1][j] = bnd_val;
-        }
-    }
-}
-
-void Fluid::gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
-    double c = 4*a + 1; 
-
-    for (int k = 0; k < iter; k++) {
-        for (int i = 1; i < x.rows - 1; i++) {
-            for (int j = 1; j < x.cols - 1; j++) {
-                x[i][j] =  (x0[i][j] + a *
-                           (x[i+1][j] +
-                            x[i-1][j] +
-                            x[i][j+1] +
-                            x[i][j-1] )) * (1.0/c);
-            }
-        }
-        set_bnd(x);
-    }
-}
-
 Scalar_Field Fluid::div(Vector_Field field, double h) {
     Scalar_Field result(field.x.rows, field.x.cols);
 
@@ -151,21 +118,54 @@ Scalar_Field Fluid::curl(Vector_Field field, double h) {
     return result;
 }
 
+
+void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
+    for (int _ = 0; _ < nx; _++) {
+        for (int i = 0; i < nx; i++) {
+            x[i][0] = bnd_val;
+            x[i][nx-1] = bnd_val;
+        }
+    }
+
+    for (int _ = 0; _ < nx; _++) {
+        for (int j = 0; j < nx; j++) {
+            x[0][j] = bnd_val;
+            x[nx-1][j] = bnd_val;
+        }
+    }
+}
+
+void Fluid::gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
+    double c = 4*a + 1; 
+
+    for (int k = 0; k < iter; k++) {
+        for (int i = 1; i < x.rows - 1; i++) {
+            for (int j = 1; j < x.cols - 1; j++) {
+                x[i][j] =  (x0[i][j] + a *
+                           (x[i+1][j] +
+                            x[i-1][j] +
+                            x[i][j+1] +
+                            x[i][j-1] )) * (1.0/c);
+            }
+        }
+        set_bnd(x);
+    }
+}
+
 void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &v_x, Scalar_Field &v_y) {
     int ix, iy;
 
     double dtx = dt * (nx - 2);
-    double dty = dt * (nx - 2);
     
     double s0, s1, t0, t1;
     double x, y;
 
-    for (double j = 1; j < nx - 1; j++) { 
-        for (double i = 1; i < nx - 1; i++) {
+    for (double i = 1; i < nx - 1; i++) { 
+        for (double j = 1; j < nx - 1; j++) {
             x = constrain(i - dtx * v_x[i][j], 0.5, nx + 0.5);
             ix = constrain(floorf(x), 0, nx-2);
 
-            y = constrain(j - dty * v_y[i][j], 0.5, nx + 0.5);
+            y = constrain(j - dtx * v_y[i][j], 0.5, nx + 0.5);
             iy = constrain(floorf(y), 0, nx-2); 
                 
             s1 = x - ix; 
@@ -189,8 +189,8 @@ void Fluid::project_velocity() {
     set_bnd(v.y);
     gauss_seidel(v.x, v.y, 1);
     
-    for (int j = 1; j < nx - 1; j++) {
-        for (int i = 1; i < nx - 1; i++) {
+    for (int i = 1; i < nx - 1; i++) {
+        for (int j = 1; j < nx - 1; j++) {
             v0.x[i][j] -= 0.5 * (v.x[i+1][j] - v.x[i-1][j]) * nx;
             v0.y[i][j] -= 0.5 * (v.x[i][j+1] - v.x[i][j-1]) * nx;
         }
