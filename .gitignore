@@ -1,4 +1,5 @@
 diffuser
 convert.sh
 benchmark.txt
-perlin
+diffuser.dSYM
+raylib-macos

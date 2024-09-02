@@ -209,7 +209,6 @@ void Fluid::diffuse_velocity() {
 
 void Fluid::diffuse_density() {
     double a = dt * diff * nx * nx;
-
     gauss_seidel(s, density, a);
 }
 
