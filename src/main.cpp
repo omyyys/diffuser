@@ -13,7 +13,7 @@
 
 constexpr int FPS = 120;
 
-constexpr double DIFF_DEF = 0.001;
+constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
 
@@ -55,8 +55,8 @@ void random_spawn(Fluid &fluid, int splats) {
 Color get_colour(int timesteps) {
     return ColorFromHSV (
         timesteps % 360,
-        100, 
-        60
+        1, 
+        0.6
     );
 }
 
@@ -148,8 +148,8 @@ int main() {
 
         if (blend) EndBlendMode();
 
-        // Change colour every 5 frames
-        if (colour_change && timesteps % 5 == 0) colour = get_colour(timesteps); 
+        // Change colour every 10 frames
+        if (colour_change && timesteps % 4 == 0) colour = get_colour(timesteps); 
 
         DrawFPS(GetScreenWidth() - 100, 10);
 
