@@ -84,16 +84,16 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     };
 }
 
-Scalar_Field Fluid::div(Vector_Field field, double h) {
-    Scalar_Field result(field.x.rows, field.x.cols);
+Scalar_Field Vector_Field::div(double h) {
+    Scalar_Field result(x.rows, x.cols);
 
-    for (int i = 1; i < field.x.rows - 1; i++) {
-        for (int j = 1; j < field.y.cols - 1; j++) {
+    for (int i = 1; i < x.rows - 1; i++) {
+        for (int j = 1; j < y.cols - 1; j++) {
             result[i][j] = -0.5 * (
-                    field.x[i+1][j] -
-                    field.x[i-1][j] +
-                    field.y[i][j+1] -
-                    field.y[i][j-1]
+                    x[i+1][j] -
+                    x[i-1][j] +
+                    y[i][j+1] -
+                    y[i][j-1]
 
                 ) / h;
         }
@@ -103,13 +103,13 @@ Scalar_Field Fluid::div(Vector_Field field, double h) {
 }
 
 // https://scicomp.stackexchange.com/questions/21915/discrete-definitions-of-curl-nabla-times-f
-Scalar_Field Fluid::curl(Vector_Field field, double h) {
-    Scalar_Field result(field.x.rows, field.x.cols);
+Scalar_Field Vector_Field::curl(double h) {
+    Scalar_Field result(x.rows, x.cols);
 
-    for (int i = 1; i < field.x.rows - 1; i++) {
-        for (int j = 1; j < field.y.rows - 1; j++) {
-            double dv_dx = (field.y[i+1][j] - field.y[i-1][j]) / (2*h);
-            double du_dy = (field.x[i][j+1] - field.x[i][j]) / (2*h);
+    for (int i = 1; i < x.rows - 1; i++) {
+        for (int j = 1; j < y.rows - 1; j++) {
+            double dv_dx = (y[i+1][j] - y[i-1][j]) / (2*h);
+            double du_dy = (x[i][j+1] - x[i][j]) / (2*h);
 
             result[i][j] = dv_dx - du_dy;
         }
@@ -117,7 +117,6 @@ Scalar_Field Fluid::curl(Vector_Field field, double h) {
 
     return result;
 }
-
 
 void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
     for (int _ = 0; _ < nx; _++) {
@@ -184,7 +183,7 @@ void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &v_x, Scalar_
 
 void Fluid::project_velocity() {
     for (auto& vec : v.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    v.y = div(v0, nx);
+    v.y = v0.div(nx);
 
     set_bnd(v.y);
     gauss_seidel(v.x, v.y, 1);
@@ -257,7 +256,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 }
 
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
-    Scalar_Field vorticity = curl(v);
+    Scalar_Field vorticity = v.curl();
     set_bnd(vorticity);
 
     for (int i = 2; i < nx - 2; i++) {

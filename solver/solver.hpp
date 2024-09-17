@@ -9,7 +9,6 @@ double constrain(double value, double range_start, double range_end);
 
 class Scalar_Field {
     public:
-    
     int rows, cols;
     std::vector<std::vector<double>> elements;
 
@@ -19,8 +18,12 @@ class Scalar_Field {
     std::vector<double>& operator[] (int index); 
 };
 
-struct Vector_Field {
+class Vector_Field {
+    public:
     Scalar_Field x, y;
+
+    Scalar_Field curl(double h = 1.0);
+    Scalar_Field div(double h = 1.0);
 };
 
 class Fluid {
@@ -39,9 +42,6 @@ class Fluid {
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
- 
-    static Scalar_Field curl(Vector_Field field, double h = 1.0);
-    static Scalar_Field div(Vector_Field field, double h = 1.0);
 
     void add_density(int x, int y, double amt); 
     void add_velocity(int x, int y, double amt_x, double amt_y);
