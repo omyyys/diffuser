@@ -18,6 +18,7 @@ constexpr int FPS = 120;
 constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
+constexpr int COLOUR_CHANGE_INTERVAL = 4;
 
 constexpr int STD_FONT_SIZE = 20;
 
@@ -50,7 +51,12 @@ typedef struct {
     bool paused;
     FieldType rendering_field;
 
-} Settings;
+    Vector2 mouse;
+    Vector2 mouse_prev;
+
+    int timesteps;
+
+} UI_State;
 
 double rand_double(double start, double end) { 
     return lin_interpolation(rand(), 0, RAND_MAX, start, end)    ;
@@ -83,26 +89,132 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
     return (collision.width * collision.height) >= (mouse_rect.width * mouse_rect.height);    
 }
 
+void render(UI_State &state, Fluid &fluid) {
+    if (state.rendering_field < 0) {
+        state.rendering_field = (FieldType) (FIELDS_COUNT-1);
+    }
+
+    if (state.blend) BeginBlendMode(BLEND_ADDITIVE);
+
+    if (state.rendering_field == DENSITY) { 
+        fluid.render_density(state.scale, state.colour, PARTICLE_SIZE_DEF);
+
+    } else if (state.rendering_field == VELOCITY) {
+        fluid.render_velocity(state.scale, state.colour, PARTICLE_SIZE_DEF);
+
+    } else if (state.rendering_field == VORTICITY) {
+        fluid.render_vorticity(state.scale, state.colour, PARTICLE_SIZE_DEF); 
+    }
+
+    if (state.blend) EndBlendMode();
+}
+
+void get_ui_input(UI_State &state, Fluid &fluid) {
+    DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
+    GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "1", &state.visc, 0.0, 1.0);
+    fluid.visc = state.visc;
+
+    DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
+    GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &state.diff, 0.0, 0.1);
+    fluid.diff = state.diff;
+
+    DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
+    GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &state.colour);
+
+    DrawText("Additive Blending", 920, 610, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 610, 20, 20 }, NULL, &state.blend);
+
+    DrawText("Auto Colours", 920, 660, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 660, 20, 20 }, NULL, &state.colour_change);
+
+    if (GuiButton((Rectangle) { 920, 710, 200, 40 }, "Random splat")) {
+        random_spawn(fluid, state.nx);
+    }
+}
+
+void draw_info(UI_State state) {
+    DrawText(TextFormat("timesteps: %d", state.timesteps), 20, 20, STD_FONT_SIZE, WHITE);
+    DrawText(TextFormat("grid resolution: %d", state.nx), 20, 50, STD_FONT_SIZE, WHITE);
+
+    if (state.rendering_field == DENSITY) {
+        DrawText("rendering density", 20, 80, STD_FONT_SIZE, WHITE);
+
+    } else if (state.rendering_field == VELOCITY) {
+        DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
+
+    } else if (state.rendering_field == VORTICITY) {
+        DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
+
+    } else {
+        DrawText(TextFormat("error: field enum not exhausted: %d", state.rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
+    }
+
+    if (state.paused) DrawText("paused", 20, 110, STD_FONT_SIZE, WHITE);
+        
+    DrawText("arrow keys to switch field", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
+    DrawText("c to clear screen", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+    DrawText("r to change grid resolution", 320, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
+    DrawText("esc to pause", 320, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+
+    DrawFPS(GetScreenWidth() - 100, 10);
+}
+
+void handle_input(UI_State &state, Fluid &fluid) {
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mouse_is_in_window(state.mouse, state.scale)) { 
+        Vector2 mouse_travelled = Vector2Subtract(state.mouse, state.mouse_prev);
+
+        fluid.add_density(round(state.mouse.x / state.scale), 
+                            round(state.mouse.y / state.scale), 1.0);
+
+        fluid.add_velocity(round(state.mouse.x / state.scale), 
+                            round(state.mouse.y / state.scale), mouse_travelled.x, mouse_travelled.y); 
+    }
+
+    if (IsKeyPressed(KEY_C)) fluid.reset();
+
+    if (IsKeyPressed(KEY_R)) {
+        state.current_resolution_index = (state.current_resolution_index + 1) % (sizeof(resolutions) / sizeof(int));
+        state.nx = resolutions[state.current_resolution_index];
+        fluid = Fluid(state.nx, state.diff, state.visc, 1.0/FPS);
+        state.scale = WIDTH / state.nx;
+    }
+
+    if (IsKeyPressed(KEY_RIGHT)) {
+        state.rendering_field = (FieldType) ((state.rendering_field + 1) % FIELDS_COUNT); 
+
+    } else if (IsKeyPressed(KEY_LEFT)) {
+        state.rendering_field = (FieldType) ((state.rendering_field  - 1) % FIELDS_COUNT);
+    }
+
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        state.paused = !state.paused;
+    }
+}
+
 int main() {
     srand(time(NULL));
 
-    Settings settings;
-    
-    settings.current_resolution_index = 2; 
-    settings.nx = resolutions[settings.current_resolution_index];
-    settings.scale = WIDTH / settings.nx; 
-    settings.visc = VISC_DEF;
-    settings.diff = DIFF_DEF;
-    settings.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
-    settings.blend = true;
-    settings.colour_change = false; 
-    settings.paused = false;
-    settings.rendering_field = DENSITY;
+    UI_State state;
 
-    int timesteps = 0;
+    state.current_resolution_index = 2; 
+    state.nx = resolutions[state.current_resolution_index];
+    state.scale = WIDTH / state.nx; 
+    state.visc = VISC_DEF;
+    state.diff = DIFF_DEF;
+    state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
+    state.blend = true;
+    state.colour_change = false; 
+    state.paused = false;
+    state.rendering_field = DENSITY;
+
+    state.mouse = Vector2Zero();
+    state.mouse_prev = Vector2Zero(); 
+
+    state.timesteps = 0;
+
     int fps_sum = 0;
     
-    Fluid fluid(settings.nx, settings.diff, settings.visc, 1.0/FPS);
+    Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
     InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "test");
@@ -110,128 +222,43 @@ int main() {
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
 
-    Vector2 mouse = Vector2Zero();
-    Vector2 prev_mouse = Vector2Zero(); 
-
     while (!WindowShouldClose()) {
-        if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) 
+        if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) {
             SetWindowSize(WIDTH + GUI_WIDTH, HEIGHT);
+        }
 
-        prev_mouse = mouse;
-        mouse = GetMousePosition();
+        state.mouse_prev = state.mouse;
+        state.mouse = GetMousePosition();
 
         BeginDrawing();
         ClearBackground(BLACK);
 
-        if (IsKeyPressed(KEY_C)) fluid.reset();
-
-        if (IsKeyPressed(KEY_R)) {
-            settings.current_resolution_index = (settings.current_resolution_index + 1) % (sizeof(resolutions) / sizeof(int));
-            settings.nx = resolutions[settings.current_resolution_index];
-            fluid = Fluid(settings.nx, settings.diff, settings.visc, 1.0/FPS);
-            settings.scale = WIDTH / settings.nx;
-        }
-
-        if (IsKeyPressed(KEY_RIGHT)) {
-            settings.rendering_field = (FieldType) ((settings.rendering_field + 1) % FIELDS_COUNT); 
-
-        } else if (IsKeyPressed(KEY_LEFT)) {
-            settings.rendering_field = (FieldType) ((settings.rendering_field  - 1) % FIELDS_COUNT);
-        }
-
-        if (IsKeyPressed(KEY_ESCAPE)) settings.paused = !settings.paused;
-
-        if (settings.rendering_field < 0) settings.rendering_field = (FieldType) (FIELDS_COUNT-1);
-
-        if (!settings.paused) {
+        if (!state.paused) {
             fluid.step();
-            fluid.fade_density(5e-4 + settings.visc * 0.001);
-            timesteps++;
+            fluid.fade_density(5e-4 + state.visc * 0.001);
+            state.timesteps++;
         }
 
-        if (settings.blend) BeginBlendMode(BLEND_ADDITIVE);
-
-        if (settings.rendering_field == DENSITY) { 
-            fluid.render_density(settings.scale, settings.colour, PARTICLE_SIZE_DEF);
-
-        } else if (settings.rendering_field == VELOCITY) {
-            fluid.render_velocity(settings.scale, settings.colour, PARTICLE_SIZE_DEF);
-
-        } else if (settings.rendering_field == VORTICITY) {
-            fluid.render_vorticity(settings.scale, settings.colour, PARTICLE_SIZE_DEF); 
+        if (state.colour_change && state.timesteps % COLOUR_CHANGE_INTERVAL == 0) {
+            state.colour = get_colour(state.timesteps); 
         }
 
-        if (settings.blend) EndBlendMode();
-
-        // Change colour every 4 frames
-        if (settings.colour_change && timesteps % 4 == 0) settings.colour = get_colour(timesteps); 
-
-        DrawFPS(GetScreenWidth() - 100, 10);
-
-        DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "1", &settings.visc, 0.0, 1.0);
-        fluid.visc = settings.visc;
-
-        DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
-        GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &settings.diff, 0.0, 0.1);
-        fluid.diff = settings.diff;
-
-        DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
-        GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &settings.colour);
-
-        DrawText("Additive Blending", 920, 610, STD_FONT_SIZE, WHITE);
-        GuiCheckBox((Rectangle) { 1120, 610, 20, 20 }, NULL, &settings.blend);
-
-        DrawText("Auto Colours", 920, 660, STD_FONT_SIZE, WHITE);
-        GuiCheckBox((Rectangle) { 1120, 660, 20, 20 }, NULL, &settings.colour_change);
-
-        if (GuiButton((Rectangle) { 920, 710, 200, 40 }, "Random splat")) {
-            random_spawn(fluid, settings.nx);
-        }
-   
-        DrawText(TextFormat("timesteps: %d", timesteps), 20, 20, STD_FONT_SIZE, WHITE);
-        DrawText(TextFormat("grid resolution: %d", settings.nx), 20, 50, STD_FONT_SIZE, WHITE);
-
-        if (settings.rendering_field == DENSITY)
-            DrawText("rendering density", 20, 80, STD_FONT_SIZE, WHITE);
-
-        else if (settings.rendering_field == VELOCITY)
-            DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
-
-        else if (settings.rendering_field == VORTICITY)
-            DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
-
-        else 
-            DrawText(TextFormat("error: field enum not exhausted: %d", settings.rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
-
-        if (settings.paused) DrawText("paused", 20, 110, STD_FONT_SIZE, WHITE);
-        
-        DrawText("arrow keys to switch field", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
-        DrawText("c to clear screen", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
-        DrawText("r to change grid resolution", 320, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
-        DrawText("esc to pause", 320, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
-        
-        if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mouse_is_in_window(mouse, settings.scale)) { 
-            Vector2 mouse_travelled = Vector2Subtract(mouse, prev_mouse);
-
-            fluid.add_density(round(mouse.x / settings.scale), 
-                              round(mouse.y / settings.scale), 1.0);
-
-            fluid.add_velocity(round(mouse.x / settings.scale), 
-                               round(mouse.y / settings.scale), mouse_travelled.x, mouse_travelled.y); 
-        }
+        render(state, fluid);
+        get_ui_input(state, fluid);
+        draw_info(state);
+        handle_input(state, fluid);
  
         EndDrawing();
 
         if (BENCHMARK) {
             fps_sum += GetFPS();
-            if (timesteps >= BENCHMARK_TIMESTEPS) break;
+            if (state.timesteps >= BENCHMARK_TIMESTEPS) break;
         }
     }
 
     CloseWindow();
 
-    if (BENCHMARK) printf("avg fps over %d timesteps: %0.1lf\n", timesteps, double(fps_sum) / timesteps);
+    if (BENCHMARK) printf("avg fps over %d timesteps: %0.1lf\n", state.timesteps, double(fps_sum) / state.timesteps);
 
     return 0;
 }
