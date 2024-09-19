@@ -70,15 +70,15 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     visc = _visc;
     dt = _dt;
 
-    s = Scalar_Field(nx, nx);
+    density_temp = Scalar_Field(nx, nx);
     density = Scalar_Field(nx, nx);
 
-    v = {
+    vel = {
         .x = Scalar_Field(nx, nx),
         .y = Scalar_Field(nx, nx)
     };
 
-    v0 = {
+    vel0 = {
         .x = Scalar_Field(nx, nx),
         .y = Scalar_Field(nx, nx)
     };
@@ -119,18 +119,9 @@ Scalar_Field Vector_Field::curl(double h) {
 }
 
 void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
-    for (int _ = 0; _ < nx; _++) {
-        for (int i = 0; i < nx; i++) {
-            x[i][0] = bnd_val;
-            x[i][nx-1] = bnd_val;
-        }
-    }
-
-    for (int _ = 0; _ < nx; _++) {
-        for (int j = 0; j < nx; j++) {
-            x[0][j] = bnd_val;
-            x[nx-1][j] = bnd_val;
-        }
+    for (int i = 0; i < nx; i++) {
+        x[i][0] = x[i][nx-1] = bnd_val;
+        x[0][1] = x[nx-1][i] = bnd_val;
     }
 }
 
@@ -151,64 +142,64 @@ void Fluid::gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter) 
     }
 }
 
-void Fluid::advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &v_x, Scalar_Field &v_y) {
-    int ix, iy;
+void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x, Scalar_Field &vel_y) {
+    int cell_x, cell_y;
 
     double dtx = dt * (nx - 2);
     
-    double s0, s1, t0, t1;
+    double weight_left_x, weight_right_x, weight_bottom_y, weight_top_y;
     double x, y;
 
     for (double i = 1; i < nx - 1; i++) { 
         for (double j = 1; j < nx - 1; j++) {
-            x = constrain(i - dtx * v_x[i][j], 0.5, nx + 0.5);
-            ix = constrain(floorf(x), 0, nx-2);
+            x = constrain(i - dtx * vel_x[i][j], 0.5, nx + 0.5);
+            cell_x = constrain(floorf(x), 0, nx-2);
 
-            y = constrain(j - dtx * v_y[i][j], 0.5, nx + 0.5);
-            iy = constrain(floorf(y), 0, nx-2); 
+            y = constrain(j - dtx * vel_y[i][j], 0.5, nx + 0.5);
+            cell_y = constrain(floorf(y), 0, nx-2); 
                 
-            s1 = x - ix; 
-            s0 = 1.0 - s1; 
-            t1 = y - iy; 
-            t0 = 1.0 - t1;
+            weight_right_x = x - cell_x; 
+            weight_left_x = 1.0 - weight_right_x; 
+            weight_top_y = y - cell_y; 
+            weight_bottom_y = 1.0 - weight_top_y;
                 
-            d[i][j] = 
-                s0 * (t0 * d0[ix][iy] + t1 * d0[ix][iy+1]) + 
-                s1 * (t0 * d0[ix+1][iy] + t1 * d0[ix+1][iy+1]);
+            dens[i][j] = 
+                weight_left_x * (weight_bottom_y * dens0[cell_x][cell_y] + weight_top_y * dens0[cell_x][cell_y+1]) + 
+                weight_right_x * (weight_bottom_y * dens0[cell_x+1][cell_y] + weight_top_y * dens0[cell_x+1][cell_y+1]);
         }
     }
 
-    set_bnd(d);
+    set_bnd(dens);
 }
 
 void Fluid::project_velocity() {
-    for (auto& vec : v.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    v.y = v0.div(nx);
+    for (auto& vec : vel.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    vel.y = vel0.div(nx);
 
-    set_bnd(v.y);
-    gauss_seidel(v.x, v.y, 1);
+    set_bnd(vel.y);
+    gauss_seidel(vel.x, vel.y, 1);
     
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
-            v0.x[i][j] -= 0.5 * (v.x[i+1][j] - v.x[i-1][j]) * nx;
-            v0.y[i][j] -= 0.5 * (v.x[i][j+1] - v.x[i][j-1]) * nx;
+            vel0.x[i][j] -= 0.5 * (vel.x[i+1][j] - vel.x[i-1][j]) * nx;
+            vel0.y[i][j] -= 0.5 * (vel.x[i][j+1] - vel.x[i][j-1]) * nx;
         }
     }
 
-    set_bnd(v0.x);
-    set_bnd(v0.y);
+    set_bnd(vel0.x);
+    set_bnd(vel0.y);
 }
 
 void Fluid::diffuse_velocity() {
     double a = dt * visc * nx * nx;
 
-    gauss_seidel(v0.x, v.x, a);
-    gauss_seidel(v0.y, v.y, a);
+    gauss_seidel(vel0.x, vel.x, a);
+    gauss_seidel(vel0.y, vel.y, a);
 }
 
 void Fluid::diffuse_density() {
     double a = dt * diff * nx * nx;
-    gauss_seidel(s, density, a);
+    gauss_seidel(density_temp, density, a);
 }
 
 void Fluid::step() {
@@ -216,11 +207,11 @@ void Fluid::step() {
 
     project_velocity();
 
-    advect(v.x, v0.x, v0.x, v0.y);
-    advect(v.y, v0.y, v0.x, v0.y);
+    advect(vel.x, vel0.x, vel0.x, vel0.y);
+    advect(vel.y, vel0.y, vel0.x, vel0.y);
 
     diffuse_density();
-    advect(density, s, v.x, v.y);
+    advect(density, density_temp, vel.x, vel.y);
 }
 
 void Fluid::add_density(int x, int y, double amt) {
@@ -228,8 +219,8 @@ void Fluid::add_density(int x, int y, double amt) {
 }
 
 void Fluid::add_velocity(int x, int y, double amt_x, double amt_y) {    
-    v.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
-    v.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
+    vel.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
+    vel.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
 }
 
 void Fluid::render_density(int scale, Color colour, float particle_size) {
@@ -246,7 +237,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
             Vector2 position = {.x = (float) (i*scale), .y = (float) (j*scale) };
-            Vector2 velocity = {.x = (float) v.x[i][j], .y = (float) v.y[i][j]};
+            Vector2 velocity = {.x = (float) vel.x[i][j], .y = (float) vel.y[i][j]};
             Vector2 velocity_normal = Vector2Scale(Vector2Normalize(velocity), 4*line_length);
 
             if (Vector2Equals(velocity_normal, Vector2Zero())) DrawPixelV(position, colour);
@@ -256,7 +247,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 }
 
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
-    Scalar_Field vorticity = v.curl();
+    Scalar_Field vorticity = vel.curl();
     set_bnd(vorticity);
 
     for (int i = 2; i < nx - 2; i++) {
@@ -288,11 +279,11 @@ void Fluid::print_density(FILE *f) {
 }
 
 void Fluid::reset() {
-    for (auto& vec : s.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : density_temp.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : density.elements) std::fill(vec.begin(), vec.end(), 0);
 
-    for (auto& vec : v.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v.y.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v0.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : v0.y.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : vel.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : vel.y.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : vel0.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    for (auto& vec : vel0.y.elements) std::fill(vec.begin(), vec.end(), 0);
 }

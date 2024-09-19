@@ -34,11 +34,11 @@ class Fluid {
     double diff;
     double visc;
     
-    Scalar_Field s;
+    Scalar_Field density_temp;
     Scalar_Field density;
     
-    Vector_Field v;
-    Vector_Field v0;
+    Vector_Field vel;
+    Vector_Field vel0;
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
