@@ -58,8 +58,26 @@ typedef struct {
 
 } UI_State;
 
+void set_default_state(UI_State& state) {
+    state.current_resolution_index = 2; 
+    state.nx = resolutions[state.current_resolution_index];
+    state.scale = WIDTH / state.nx; 
+    state.visc = VISC_DEF;
+    state.diff = DIFF_DEF;
+    state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
+    state.blend = true;
+    state.colour_change = false; 
+    state.paused = false;
+    state.rendering_field = DENSITY;
+
+    state.mouse = Vector2Zero();
+    state.mouse_prev = Vector2Zero(); 
+
+    state.timesteps = 0;
+}
+
 double rand_double(double start, double end) { 
-    return lin_interpolation(rand(), 0, RAND_MAX, start, end)    ;
+    return translate_value(rand(), 0, RAND_MAX, start, end)    ;
 }
 
 void random_spawn(Fluid &fluid, int splats) {
@@ -78,6 +96,12 @@ Color get_colour(int timesteps) {
         1, 
         0.6
     );
+}
+
+void normalise_window_size() {
+    if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) {
+        SetWindowSize(WIDTH + GUI_WIDTH, HEIGHT);
+    }
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
@@ -163,11 +187,11 @@ void handle_input(UI_State &state, Fluid &fluid) {
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mouse_is_in_window(state.mouse, state.scale)) { 
         Vector2 mouse_travelled = Vector2Subtract(state.mouse, state.mouse_prev);
 
-        fluid.add_density(round(state.mouse.x / state.scale), 
-                            round(state.mouse.y / state.scale), 1.0);
+        fluid.add_density(state.mouse.x / state.scale, 
+                            state.mouse.y / state.scale, 1.0);
 
-        fluid.add_velocity(round(state.mouse.x / state.scale), 
-                            round(state.mouse.y / state.scale), mouse_travelled.x, mouse_travelled.y); 
+        fluid.add_velocity(state.mouse.x / state.scale, 
+                            state.mouse.y / state.scale, mouse_travelled.x, mouse_travelled.y); 
     }
 
     if (IsKeyPressed(KEY_C)) fluid.reset();
@@ -195,25 +219,8 @@ int main() {
     srand(time(NULL));
 
     UI_State state;
+    set_default_state(state);
 
-    state.current_resolution_index = 2; 
-    state.nx = resolutions[state.current_resolution_index];
-    state.scale = WIDTH / state.nx; 
-    state.visc = VISC_DEF;
-    state.diff = DIFF_DEF;
-    state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
-    state.blend = true;
-    state.colour_change = false; 
-    state.paused = false;
-    state.rendering_field = DENSITY;
-
-    state.mouse = Vector2Zero();
-    state.mouse_prev = Vector2Zero(); 
-
-    state.timesteps = 0;
-
-    int fps_sum = 0;
-    
     Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
@@ -223,9 +230,7 @@ int main() {
     SetExitKey(KEY_NULL);
 
     while (!WindowShouldClose()) {
-        if (GetScreenWidth() != (WIDTH + GUI_WIDTH) || GetScreenHeight() != HEIGHT) {
-            SetWindowSize(WIDTH + GUI_WIDTH, HEIGHT);
-        }
+        normalise_window_size();
 
         state.mouse_prev = state.mouse;
         state.mouse = GetMousePosition();
@@ -249,16 +254,9 @@ int main() {
         handle_input(state, fluid);
  
         EndDrawing();
-
-        if (BENCHMARK) {
-            fps_sum += GetFPS();
-            if (state.timesteps >= BENCHMARK_TIMESTEPS) break;
-        }
     }
 
     CloseWindow();
-
-    if (BENCHMARK) printf("avg fps over %d timesteps: %0.1lf\n", state.timesteps, double(fps_sum) / state.timesteps);
 
     return 0;
 }

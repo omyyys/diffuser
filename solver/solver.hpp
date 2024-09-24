@@ -4,7 +4,7 @@
 
 #include "../raylib/include/raylib.h"
 
-double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max);
+double translate_value(double value, double cur_min, double cur_max, double res_min, double res_max);
 double constrain(double value, double range_start, double range_end);
 
 class Scalar_Field {
@@ -46,8 +46,8 @@ class Fluid {
     void add_density(int x, int y, double amt); 
     void add_velocity(int x, int y, double amt_x, double amt_y);
 
-    void set_bnd(Scalar_Field &x, double bnd_val = 0.0);
-    void gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
+    void set_bounds(Scalar_Field &x, double bnd_val = 0.0);
+    void gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
     void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &vx, Scalar_Field &vy);
     void project_velocity();
     void diffuse_velocity();
@@ -57,6 +57,8 @@ class Fluid {
     void render_velocity(int scale, Color colour, float line_length);
     void render_vorticity(int scale, Color colour, float particle_size);
     void fade_density(double fade);
-    void print_density(FILE *out = stdout);
     void reset();
+
+    private:
+    void debug_print_density(FILE *out = stdout);
 };

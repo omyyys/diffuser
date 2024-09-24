@@ -21,7 +21,7 @@ double constrain(double value, double range_start, double range_end) {
     return value;
 }
 
-double lin_interpolation(double value, double cur_min, double cur_max, double res_min, double res_max) {
+double translate_value(double value, double cur_min, double cur_max, double res_min, double res_max) {
     value = constrain(value, cur_min, cur_max); 
 
     double cur_range = cur_max - cur_min;
@@ -32,8 +32,8 @@ double lin_interpolation(double value, double cur_min, double cur_max, double re
     return res_min + normalised_value * res_range;
 }
 
-Color get_colour_w_alpha(Color base, double val, double min, double max) { 
-    base.a = lin_interpolation(val, min, max, 0, 255);
+Color get_colour_with_alpha(Color base, double val, double min, double max) { 
+    base.a = translate_value(val, min, max, 0, 255);
     return base;
 }
 
@@ -43,10 +43,10 @@ Color get_colour_temp(Color color, double val, double min, double max) {
     Color complement = ColorFromHSV(complement_hsv.x, complement_hsv.y, complement_hsv.z); 
 
     return (Color){
-        (unsigned char) lin_interpolation(val, min, max, complement.r, color.r),
-        (unsigned char) lin_interpolation(val, min, max, complement.g, color.g),
-        (unsigned char) lin_interpolation(val, min, max, complement.b, color.b),
-        (unsigned char) lin_interpolation(abs(val), 0, max, 0, 255), 
+        (unsigned char) translate_value(val, min, max, complement.r, color.r),
+        (unsigned char) translate_value(val, min, max, complement.g, color.g),
+        (unsigned char) translate_value(val, min, max, complement.b, color.b),
+        (unsigned char) translate_value(abs(val), 0, max, 0, 255), 
     };
 }
 
@@ -118,27 +118,28 @@ Scalar_Field Vector_Field::curl(double h) {
     return result;
 }
 
-void Fluid::set_bnd(Scalar_Field &x, double bnd_val) {
+void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
     for (int i = 0; i < nx; i++) {
         x[i][0] = x[i][nx-1] = bnd_val;
         x[0][1] = x[nx-1][i] = bnd_val;
     }
 }
 
-void Fluid::gauss_seidel(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
+void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
     double c = 4*a + 1; 
 
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < x.rows - 1; i++) {
             for (int j = 1; j < x.cols - 1; j++) {
                 x[i][j] =  (x0[i][j] + a *
-                           (x[i+1][j] +
-                            x[i-1][j] +
-                            x[i][j+1] +
-                            x[i][j-1] )) * (1.0/c);
+                               (x[i+1][j] +
+                                x[i-1][j] +
+                                x[i][j+1] +
+                                x[i][j-1] )) * (1.0/c);
             }
         }
-        set_bnd(x);
+
+        set_bounds(x);
     }
 }
 
@@ -169,15 +170,15 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
         }
     }
 
-    set_bnd(dens);
+    set_bounds(dens);
 }
 
 void Fluid::project_velocity() {
     for (auto& vec : vel.x.elements) std::fill(vec.begin(), vec.end(), 0);
     vel.y = vel0.div(nx);
 
-    set_bnd(vel.y);
-    gauss_seidel(vel.x, vel.y, 1);
+    set_bounds(vel.y);
+    gauss_seidel_solve(vel.x, vel.y, 1);
     
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
@@ -186,20 +187,20 @@ void Fluid::project_velocity() {
         }
     }
 
-    set_bnd(vel0.x);
-    set_bnd(vel0.y);
+    set_bounds(vel0.x);
+    set_bounds(vel0.y);
 }
 
 void Fluid::diffuse_velocity() {
     double a = dt * visc * nx * nx;
 
-    gauss_seidel(vel0.x, vel.x, a);
-    gauss_seidel(vel0.y, vel.y, a);
+    gauss_seidel_solve(vel0.x, vel.x, a);
+    gauss_seidel_solve(vel0.y, vel.y, a);
 }
 
 void Fluid::diffuse_density() {
     double a = dt * diff * nx * nx;
-    gauss_seidel(density_temp, density, a);
+    gauss_seidel_solve(density_temp, density, a);
 }
 
 void Fluid::step() {
@@ -228,7 +229,7 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
         for (int j = 1; j < nx - 1; j++) {
             double dens = density[i][j];
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour_w_alpha(colour, dens, 0, 1));
+                          get_colour_with_alpha(colour, dens, 0, 1));
         }
     }
 }
@@ -248,7 +249,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     Scalar_Field vorticity = vel.curl();
-    set_bnd(vorticity);
+    set_bounds(vorticity);
 
     for (int i = 2; i < nx - 2; i++) {
         for (int j = 2; j < nx - 2; j++) {
@@ -268,16 +269,6 @@ void Fluid::fade_density(double fade) {
     }
 }
 
-void Fluid::print_density(FILE *f) {
-    for (int i = 0; i < nx; i++) {
-        fprintf(f, "{ ");
-        for (int j = 0; j < nx; j++) {
-            fprintf(f, "%lf ", density[i][j]);
-        }
-        fprintf(f, "}\n");
-    } 
-}
-
 void Fluid::reset() {
     for (auto& vec : density_temp.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : density.elements) std::fill(vec.begin(), vec.end(), 0);
@@ -286,4 +277,14 @@ void Fluid::reset() {
     for (auto& vec : vel.y.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : vel0.x.elements) std::fill(vec.begin(), vec.end(), 0);
     for (auto& vec : vel0.y.elements) std::fill(vec.begin(), vec.end(), 0);
+}
+
+void Fluid::debug_print_density(FILE *f) {
+    for (int i = 0; i < nx; i++) {
+        fprintf(f, "{ ");
+        for (int j = 0; j < nx; j++) {
+            fprintf(f, "%lf ", density[i][j]);
+        }
+        fprintf(f, "}\n");
+    } 
 }
