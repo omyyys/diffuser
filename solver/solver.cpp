@@ -32,6 +32,16 @@ double translate_value(double value, double cur_min, double cur_max, double res_
     return res_min + normalised_value * res_range;
 }
 
+double bilinear_interpolation(Scalar_Field &field, double x, double y, int cell_x, int cell_y) {
+    double weight_right_x = x - cell_x;
+    double weight_left_x = 1.0 - weight_right_x;
+    double weight_top_y = y - cell_y;
+    double weight_bottom_y = 1.0 - weight_top_y;
+
+    return weight_left_x * (weight_bottom_y * field[cell_x][cell_y] + weight_top_y * field[cell_x][cell_y+1]) + 
+           weight_right_x * (weight_bottom_y * field[cell_x+1][cell_y] + weight_top_y * field[cell_x+1][cell_y+1]);
+}
+
 Color get_colour_with_alpha(Color base, double val, double min, double max) { 
     base.a = translate_value(val, min, max, 0, 255);
     return base;
@@ -147,8 +157,7 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
     int cell_x, cell_y;
 
     double dtx = dt * (nx - 2);
-    
-    double weight_left_x, weight_right_x, weight_bottom_y, weight_top_y;
+
     double x, y;
 
     for (double i = 1; i < nx - 1; i++) { 
@@ -159,14 +168,7 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
             y = constrain(j - dtx * vel_y[i][j], 0.5, nx + 0.5);
             cell_y = constrain(floorf(y), 0, nx-2); 
                 
-            weight_right_x = x - cell_x; 
-            weight_left_x = 1.0 - weight_right_x; 
-            weight_top_y = y - cell_y; 
-            weight_bottom_y = 1.0 - weight_top_y;
-                
-            dens[i][j] = 
-                weight_left_x * (weight_bottom_y * dens0[cell_x][cell_y] + weight_top_y * dens0[cell_x][cell_y+1]) + 
-                weight_right_x * (weight_bottom_y * dens0[cell_x+1][cell_y] + weight_top_y * dens0[cell_x+1][cell_y+1]);
+            dens[i][j] = bilinear_interpolation(dens0, x, y, cell_x, cell_y);
         }
     }
 

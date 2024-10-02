@@ -22,9 +22,6 @@ constexpr int COLOUR_CHANGE_INTERVAL = 4;
 
 constexpr int STD_FONT_SIZE = 20;
 
-constexpr bool BENCHMARK = false;
-constexpr int BENCHMARK_TIMESTEPS = 1000;
-
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
 constexpr int GUI_WIDTH = 400;
