@@ -18,7 +18,7 @@ constexpr int FPS = 120;
 constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
-constexpr int COLOUR_CHANGE_INTERVAL = 4;
+constexpr int COLOUR_CHANGE_PERIOD = 4;
 
 constexpr int STD_FONT_SIZE = 20;
 
@@ -45,6 +45,8 @@ typedef struct {
     Color colour;
     bool blend;
     bool colour_change;
+    bool random_splat;
+    int random_splat_period;
     bool paused;
     FieldType rendering_field;
 
@@ -64,6 +66,8 @@ void set_default_state(UI_State& state) {
     state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
     state.blend = true;
     state.colour_change = false; 
+    state.random_splat = false; 
+    state.random_splat_period = FPS;
     state.paused = false;
     state.rendering_field = DENSITY;
 
@@ -77,7 +81,7 @@ double rand_double(double start, double end) {
     return translate_value(rand(), 0, RAND_MAX, start, end)    ;
 }
 
-void random_spawn(Fluid &fluid, int splats) {
+void random_splat(Fluid &fluid, int splats) {
     for (int i = 0; i < splats; i++) {
         int index_x = GetRandomValue(3, fluid.nx - 3); 
         int index_y = GetRandomValue(3, fluid.nx - 3); 
@@ -161,9 +165,8 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
     DrawText("Auto Colours", 920, 660, STD_FONT_SIZE, WHITE);
     GuiCheckBox((Rectangle) { 1120, 660, 20, 20 }, NULL, &state.colour_change);
 
-    if (GuiButton((Rectangle) { 920, 710, 200, 40 }, "Random splat")) {
-        random_spawn(fluid, state.nx);
-    }
+    DrawText("Auto Splat", 920, 710, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 710, 20, 20 }, NULL, &state.random_splat);
 }
 
 void draw_info(UI_State state) {
@@ -254,8 +257,12 @@ int main() {
             state.timesteps++;
         }
 
-        if (state.colour_change && state.timesteps % COLOUR_CHANGE_INTERVAL == 0) {
+        if (state.colour_change && state.timesteps % COLOUR_CHANGE_PERIOD == 0) {
             state.colour = get_colour(state.timesteps); 
+        }
+
+        if (state.random_splat && state.timesteps % state.random_splat_period == 0) {
+            random_splat(fluid, state.nx);
         }
 
         render(state, fluid);
