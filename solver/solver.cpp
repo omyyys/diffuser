@@ -162,7 +162,7 @@ Scalar_Field Vector_Field::curl(double h) {
     for (int i = 1; i < x.rows - 1; i++) {
         for (int j = 1; j < y.rows - 1; j++) {
             double dv_dx = (y[i+1][j] - y[i-1][j]) / (2*h);
-            double du_dy = (x[i][j+1] - x[i][j]) / (2*h);
+            double du_dy = (x[i][j+1] - x[i][j-1]) / (2*h);
 
             result[i][j] = dv_dx - du_dy;
         }
@@ -305,7 +305,7 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     for (int i = 2; i < nx - 2; i++) {
         for (int j = 2; j < nx - 2; j++) {
             double vort = vorticity[i][j];
-            double colour_rng = visc == 0 ? 0.01 : 0.0005;
+            double colour_rng = visc == 0 ? 0.02 : 0.05;
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
                           get_colour_temp(colour, vort, -colour_rng, colour_rng));
         }

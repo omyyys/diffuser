@@ -132,7 +132,7 @@ void render(UI_State &state, Fluid &fluid) {
 
 void get_ui_input(UI_State &state, Fluid &fluid) {
     DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-    GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "1", &state.visc, 0.0, 1.0);
+    GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "1", &state.visc, 0.0, 0.01);
     fluid.visc = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
