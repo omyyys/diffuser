@@ -110,6 +110,19 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
     return (collision.width * collision.height) >= (mouse_rect.width * mouse_rect.height);    
 }
 
+void draw_help(UI_State &state) {
+    switch (state.rendering_field) {
+        case DENSITY:
+            break;
+
+        case VELOCITY:
+            break;
+
+        case VORTICITY:
+            break;
+    }
+}
+
 void render(UI_State &state, Fluid &fluid) {
     if (state.rendering_field < 0) {
         state.rendering_field = (FieldType) (FIELDS_COUNT-1);

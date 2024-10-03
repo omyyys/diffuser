@@ -137,6 +137,21 @@ Vector_Field Vector_Field::operator-(Vector_Field b) {
     return Vector_Field(x - b.x, y - b.y);
 }
 
+// https://en.wikipedia.org/wiki/Gradient
+Vector_Field Vector_Field::grad(double h) {
+    Vector_Field result(x, y);
+
+    for (int i = 1; i < x.rows - 1; i++) {
+        for (int j = 1; j < y.rows - 1; j++) {
+            result.x[i][j] = 0.5 * (x[i+1][j] - x[i-1][j]) * h;
+            result.y[i][j] = 0.5 * (x[i][j+1] - x[i][j-1]) * h;
+        }
+    }
+
+    return result;
+}
+
+// https://en.wikipedia.org/wiki/Divergence
 Scalar_Field Vector_Field::div(double h) {
     Scalar_Field result(x.rows, x.cols);
 
@@ -171,19 +186,6 @@ Scalar_Field Vector_Field::curl(double h) {
     return result;
 }
 
-Vector_Field Vector_Field::grad(double h) {
-    Vector_Field result(x, y);
-
-    for (int i = 1; i < x.rows - 1; i++) {
-        for (int j = 1; j < y.rows - 1; j++) {
-            result.x[i][j] = 0.5 * (x[i+1][j] - x[i-1][j]) * h;
-            result.y[i][j] = 0.5 * (x[i][j+1] - x[i][j-1]) * h;
-        }
-    }
-
-    return result;
-}
-
 void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
     for (int i = 0; i < nx; i++) {
         x[i][0] = x[i][nx-1] = bnd_val;
@@ -209,13 +211,11 @@ void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int 
 
 void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x, Scalar_Field &vel_y) {
     int cell_x, cell_y;
-
     double dtx = dt * (nx - 2);
-
     double x, y;
 
-    for (double i = 1; i < nx - 1; i++) { 
-        for (double j = 1; j < nx - 1; j++) {
+    for (int i = 1; i < nx - 1; i++) { 
+        for (int j = 1; j < nx - 1; j++) {
             x = constrain(i - dtx * vel_x[i][j], 0.5, nx + 0.5);
             cell_x = constrain(floorf(x), 0, nx-2);
 
