@@ -114,19 +114,6 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
     return (collision.width * collision.height) >= (mouse_rect.width * mouse_rect.height);    
 }
 
-void draw_help(UI_State &state) {
-    switch (state.rendering_field) {
-        case DENSITY:
-            break;
-
-        case VELOCITY:
-            break;
-
-        case VORTICITY:
-            break;
-    }
-}
-
 void render(UI_State &state, Fluid &fluid) {
     if (state.rendering_field < 0) {
         state.rendering_field = (FieldType) (FIELDS_COUNT-1);
@@ -156,8 +143,8 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
     GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &state.diff, 0.0, 0.1);
     fluid.diff = state.diff;
 
-    DrawText("Colour", 920, 320, STD_FONT_SIZE, WHITE);
-    GuiColorPicker((Rectangle) { 920, 350, 200, 200 }, NULL, &state.colour);
+    DrawText("Colour", 920, 280, STD_FONT_SIZE, WHITE);
+    GuiColorPicker((Rectangle) { 920, 310, 200, 200 }, NULL, &state.colour);
 
     DrawText("Additive Blending", 920, 610, STD_FONT_SIZE, WHITE);
     GuiCheckBox((Rectangle) { 1120, 610, 20, 20 }, NULL, &state.blend);
@@ -170,23 +157,22 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
 }
 
 void draw_info(UI_State state) {
-    DrawText(TextFormat("timesteps: %d", state.timesteps), 20, 20, STD_FONT_SIZE, WHITE);
-    DrawText(TextFormat("grid resolution: %d", state.nx), 20, 50, STD_FONT_SIZE, WHITE);
+    DrawText(TextFormat("grid resolution: %d", state.nx), 20, 20, STD_FONT_SIZE, WHITE);
 
     if (state.rendering_field == DENSITY) {
-        DrawText("rendering density", 20, 80, STD_FONT_SIZE, WHITE);
+        DrawText("rendering density", 20, 50, STD_FONT_SIZE, WHITE);
 
     } else if (state.rendering_field == VELOCITY) {
-        DrawText("rendering velocity", 20, 80, STD_FONT_SIZE, WHITE);
+        DrawText("rendering velocity", 20, 50, STD_FONT_SIZE, WHITE);
 
     } else if (state.rendering_field == VORTICITY) {
-        DrawText("rendering vorticity", 20, 80, STD_FONT_SIZE, WHITE);
+        DrawText("rendering vorticity", 20, 50, STD_FONT_SIZE, WHITE);
 
     } else {
-        DrawText(TextFormat("error: field enum not exhausted: %d", state.rendering_field), 20, 80, STD_FONT_SIZE, WHITE);
+        DrawText(TextFormat("error: field enum not exhausted: %d", state.rendering_field), 20, 50, STD_FONT_SIZE, WHITE);
     }
 
-    if (state.paused) DrawText("paused", 20, 110, STD_FONT_SIZE, WHITE);
+    if (state.paused) DrawText("paused", 20, 80, STD_FONT_SIZE, WHITE);
         
     DrawText("arrow keys to switch field", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
     DrawText("c to clear screen", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
