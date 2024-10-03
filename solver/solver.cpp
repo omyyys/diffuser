@@ -66,12 +66,42 @@ Scalar_Field::Scalar_Field(int _rows, int _cols) {
     elements = std::vector(_rows, std::vector<double>(_cols, 0));
 }
 
-std::vector<double> Scalar_Field::operator[] (int index) const {
+std::vector<double> Scalar_Field::operator[](int index) const {
     return elements[index];
 }
 
-std::vector<double>& Scalar_Field::operator[] (int index) {
+std::vector<double>& Scalar_Field::operator[](int index) {
     return elements[index];
+}
+
+Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
+    Scalar_Field result(rows, cols);
+
+    for (int i = 1; i < rows - 1; i++) {
+        for (int j = 1; j < cols - 1; j++) {
+            result[i][j] = elements[i][j] + b[i][j];
+            result[i][j] = elements[i][j] + b[i][j];
+        }
+    }
+
+    return result;
+}
+
+Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
+    Scalar_Field result(rows, cols);
+
+    for (int i = 1; i < rows - 1; i++) {
+        for (int j = 1; j < cols - 1; j++) {
+            result[i][j] = elements[i][j] - b[i][j];
+            result[i][j] = elements[i][j] - b[i][j];
+        }
+    }
+
+    return result;
+}
+
+void Scalar_Field::reset() {
+    for (auto& vec : elements) std::fill(vec.begin(), vec.end(), 0);
 }
 
 Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
@@ -83,15 +113,28 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     density_temp = Scalar_Field(nx, nx);
     density = Scalar_Field(nx, nx);
 
-    vel = {
-        .x = Scalar_Field(nx, nx),
-        .y = Scalar_Field(nx, nx)
-    };
+    vel = Vector_Field (
+        Scalar_Field(nx, nx),
+        Scalar_Field(nx, nx)
+    );
 
-    vel0 = {
-        .x = Scalar_Field(nx, nx),
-        .y = Scalar_Field(nx, nx)
-    };
+    vel0 = Vector_Field (
+        Scalar_Field(nx, nx),
+        Scalar_Field(nx, nx)
+    );
+}
+
+Vector_Field::Vector_Field(Scalar_Field _x, Scalar_Field _y) {
+    x = _x;
+    y = _y;
+}
+
+Vector_Field Vector_Field::operator+(Vector_Field b) {
+    return Vector_Field(x + b.x, y + b.y);
+}
+
+Vector_Field Vector_Field::operator-(Vector_Field b) {
+    return Vector_Field(x - b.x, y - b.y);
 }
 
 Scalar_Field Vector_Field::div(double h) {
@@ -128,6 +171,19 @@ Scalar_Field Vector_Field::curl(double h) {
     return result;
 }
 
+Vector_Field Vector_Field::grad(double h) {
+    Vector_Field result(x, y);
+
+    for (int i = 1; i < x.rows - 1; i++) {
+        for (int j = 1; j < y.rows - 1; j++) {
+            result.x[i][j] = 0.5 * (x[i+1][j] - x[i-1][j]) * h;
+            result.y[i][j] = 0.5 * (x[i][j+1] - x[i][j-1]) * h;
+        }
+    }
+
+    return result;
+}
+
 void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
     for (int i = 0; i < nx; i++) {
         x[i][0] = x[i][nx-1] = bnd_val;
@@ -136,8 +192,6 @@ void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
 }
 
 void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
-    double c = 4*a + 1; 
-
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < x.rows - 1; i++) {
             for (int j = 1; j < x.cols - 1; j++) {
@@ -145,7 +199,7 @@ void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int 
                                (x[i+1][j] +
                                 x[i-1][j] +
                                 x[i][j+1] +
-                                x[i][j-1] )) * (1.0/c);
+                                x[i][j-1] )) * 1.0/(4*a + 1);
             }
         }
 
@@ -176,18 +230,13 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
 }
 
 void Fluid::project_velocity() {
-    for (auto& vec : vel.x.elements) std::fill(vec.begin(), vec.end(), 0);
+    vel.x.reset();
     vel.y = vel0.div(nx);
 
     set_bounds(vel.y);
     gauss_seidel_solve(vel.x, vel.y, 1);
     
-    for (int i = 1; i < nx - 1; i++) {
-        for (int j = 1; j < nx - 1; j++) {
-            vel0.x[i][j] -= 0.5 * (vel.x[i+1][j] - vel.x[i-1][j]) * nx;
-            vel0.y[i][j] -= 0.5 * (vel.x[i][j+1] - vel.x[i][j-1]) * nx;
-        }
-    }
+    vel0 = vel0 - vel.grad(nx);
 
     set_bounds(vel0.x);
     set_bounds(vel0.y);
@@ -272,13 +321,12 @@ void Fluid::fade_density(double fade) {
 }
 
 void Fluid::reset() {
-    for (auto& vec : density_temp.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : density.elements) std::fill(vec.begin(), vec.end(), 0);
-
-    for (auto& vec : vel.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : vel.y.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : vel0.x.elements) std::fill(vec.begin(), vec.end(), 0);
-    for (auto& vec : vel0.y.elements) std::fill(vec.begin(), vec.end(), 0);
+    density_temp.reset();
+    density.reset();
+    vel.x.reset();
+    vel.y.reset();
+    vel0.x.reset();
+    vel0.y.reset();
 }
 
 void Fluid::debug_print_density(FILE *f) {

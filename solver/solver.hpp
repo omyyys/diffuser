@@ -16,12 +16,22 @@ class Scalar_Field {
     Scalar_Field(int rows, int cols);
     std::vector<double> operator[] (int index) const; 
     std::vector<double>& operator[] (int index); 
+    Scalar_Field operator+(Scalar_Field b); 
+    Scalar_Field operator-(Scalar_Field b);
+
+    void reset();
 };
 
 class Vector_Field {
     public:
     Scalar_Field x, y;
 
+    Vector_Field() = default;
+    Vector_Field(Scalar_Field _x, Scalar_Field _y);
+    Vector_Field operator+(Vector_Field b); 
+    Vector_Field operator-(Vector_Field b);
+
+    Vector_Field grad(double h = 1.0);
     Scalar_Field curl(double h = 1.0);
     Scalar_Field div(double h = 1.0);
 };
