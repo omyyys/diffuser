@@ -80,7 +80,6 @@ Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
     for (int i = 1; i < rows - 1; i++) {
         for (int j = 1; j < cols - 1; j++) {
             result[i][j] = elements[i][j] + b[i][j];
-            result[i][j] = elements[i][j] + b[i][j];
         }
     }
 
@@ -92,7 +91,6 @@ Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
 
     for (int i = 1; i < rows - 1; i++) {
         for (int j = 1; j < cols - 1; j++) {
-            result[i][j] = elements[i][j] - b[i][j];
             result[i][j] = elements[i][j] - b[i][j];
         }
     }
@@ -234,8 +232,8 @@ void Fluid::project_velocity() {
     vel.y = vel0.div(nx);
 
     set_bounds(vel.y);
+
     gauss_seidel_solve(vel.x, vel.y, 1);
-    
     vel0 = vel0 - vel.grad(nx);
 
     set_bounds(vel0.x);
@@ -263,6 +261,7 @@ void Fluid::step() {
     advect(vel.y, vel0.y, vel0.x, vel0.y);
 
     diffuse_density();
+
     advect(density, density_temp, vel.x, vel.y);
 }
 

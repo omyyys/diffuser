@@ -45,7 +45,7 @@ typedef struct {
     Color colour;
     bool blend;
     bool colour_change;
-    bool random_splat;
+    bool random_spawn;
     int random_splat_period;
     bool paused;
     FieldType rendering_field;
@@ -66,7 +66,7 @@ void set_default_state(UI_State& state) {
     state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
     state.blend = true;
     state.colour_change = false; 
-    state.random_splat = false; 
+    state.random_spawn = false; 
     state.random_splat_period = FPS;
     state.paused = false;
     state.rendering_field = DENSITY;
@@ -140,20 +140,27 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
     fluid.visc = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
-    GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.1", &state.diff, 0.0, 0.1);
+    GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.01", &state.diff, 0.0, 0.01);
     fluid.diff = state.diff;
 
-    DrawText("Colour", 920, 280, STD_FONT_SIZE, WHITE);
-    GuiColorPicker((Rectangle) { 920, 310, 200, 200 }, NULL, &state.colour);
+    DrawText("Colour", 920, 250, STD_FONT_SIZE, WHITE);
+    GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &state.colour);
 
-    DrawText("Additive Blending", 920, 610, STD_FONT_SIZE, WHITE);
-    GuiCheckBox((Rectangle) { 1120, 610, 20, 20 }, NULL, &state.blend);
+    DrawText("Additive Blending", 920, 550, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 550, 20, 20 }, NULL, &state.blend);
 
-    DrawText("Auto Colours", 920, 660, STD_FONT_SIZE, WHITE);
-    GuiCheckBox((Rectangle) { 1120, 660, 20, 20 }, NULL, &state.colour_change);
+    DrawText("Auto Colours", 920, 600, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 600, 20, 20 }, NULL, &state.colour_change);
 
-    DrawText("Auto Splat", 920, 710, STD_FONT_SIZE, WHITE);
-    GuiCheckBox((Rectangle) { 1120, 710, 20, 20 }, NULL, &state.random_splat);
+    DrawText("Auto Spawn", 920, 650, STD_FONT_SIZE, WHITE);
+    GuiCheckBox((Rectangle) { 1120, 650, 20, 20 }, NULL, &state.random_spawn);
+
+    if (state.random_spawn) {
+        float random_spawn_period_float = state.random_splat_period;
+        DrawText("Spawn Interval (Frames)", 920, 700, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
+        state.random_splat_period = random_spawn_period_float;
+    }
 }
 
 void draw_info(UI_State state) {
@@ -247,7 +254,7 @@ int main() {
             state.colour = get_colour(state.timesteps); 
         }
 
-        if (state.random_splat && state.timesteps % state.random_splat_period == 0) {
+        if (state.random_spawn && state.timesteps % state.random_splat_period == 0) {
             random_splat(fluid, state.nx);
         }
 
