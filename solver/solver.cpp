@@ -278,8 +278,11 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
             double dens = density[i][j];
-            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
-                          get_colour_with_alpha(colour, dens, 0, 1));
+            
+            if (!double_eq(dens, 0.0)) {
+                DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
+                    get_colour_with_alpha(colour, dens, 0, 1)); 
+            }
         }
     }
 }
