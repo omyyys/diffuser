@@ -77,11 +77,11 @@ void set_default_state(UI_State& state) {
     state.timesteps = 0;
 }
 
-double rand_double(double start, double end) { 
-    return translate_value(rand(), 0, RAND_MAX, start, end)    ;
+double rand_double(double start, double end) {
+    return translate_value(rand(), 0, RAND_MAX, start, end);
 }
 
-void random_splat(Fluid &fluid, int splats) {
+void random_spawn(Fluid &fluid, int splats) {
     for (int i = 0; i < splats; i++) {
         int index_x = GetRandomValue(3, fluid.nx - 3); 
         int index_y = GetRandomValue(3, fluid.nx - 3); 
@@ -255,7 +255,7 @@ int main() {
         }
 
         if (state.random_spawn && state.timesteps % state.random_splat_period == 0) {
-            random_splat(fluid, state.nx);
+            random_spawn(fluid, state.nx);
         }
 
         render(state, fluid);
