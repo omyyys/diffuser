@@ -14,11 +14,8 @@ inline bool double_eq(double a, double b, double eps = 1e-6) {
     return fabs(a - b) < eps;
 }
 
-double constrain(double value, double range_start, double range_end) {
-    value = (value > range_end) ? range_end : value;
-    value = (value < range_start) ? range_start : value;
-
-    return value;
+inline double constrain(double value, double range_start, double range_end) {
+    return (value > range_end) ? range_end : (value < range_start) ? range_start : value;
 }
 
 double translate_value(double value, double cur_min, double cur_max, double res_min, double res_max) {

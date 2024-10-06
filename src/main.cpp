@@ -1,3 +1,6 @@
+// TODO: Perlin noise for fade and for random spawn
+// TODO: Help icons for info about the simulation
+
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -19,6 +22,7 @@ constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
 constexpr int COLOUR_CHANGE_PERIOD = 4;
+constexpr double BASE_FADE = 5e-4;
 
 constexpr int STD_FONT_SIZE = 20;
 
@@ -246,7 +250,7 @@ int main() {
 
         if (!state.paused) {
             fluid.step();
-            fluid.fade_density(5e-4 + state.visc * 0.001);
+            fluid.fade_density(BASE_FADE + state.visc * 0.001);
             state.timesteps++;
         }
 
