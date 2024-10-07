@@ -276,10 +276,9 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
         for (int j = 1; j < nx - 1; j++) {
             double dens = density[i][j];
             
-            if (!double_eq(dens, 0.0)) {
-                DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
+            if (double_eq(dens, 0.0)) continue;
+            DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                     get_colour_with_alpha(colour, dens, 0, 1)); 
-            }
         }
     }
 }
@@ -304,9 +303,11 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     for (int i = 2; i < nx - 2; i++) {
         for (int j = 2; j < nx - 2; j++) {
             double vort = vorticity[i][j];
+            if (double_eq(vort, 0.0)) continue;
+
             double colour_rng = visc == 0 ? 0.02 : 0.05;
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
-                          get_colour_temp(colour, vort, -colour_rng, colour_rng));
+                    get_colour_temp(colour, vort, -colour_rng, colour_rng));
         }
     }
 }

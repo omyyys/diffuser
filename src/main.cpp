@@ -16,7 +16,7 @@
 
 using namespace std;
 
-constexpr int FPS = 120;
+constexpr int FPS = 240;
 
 constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
