@@ -22,7 +22,7 @@ constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
 constexpr int COLOUR_CHANGE_PERIOD = 4;
-constexpr double BASE_FADE = 5e-4;
+constexpr double BASE_FADE = 3e-4;
 
 constexpr int STD_FONT_SIZE = 20;
 
@@ -234,7 +234,7 @@ int main() {
     Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
-    InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "test");
+    InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "diffuser");
     GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
