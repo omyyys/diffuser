@@ -22,7 +22,7 @@ constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
 constexpr int COLOUR_CHANGE_PERIOD = 4;
-constexpr double BASE_FADE = 3e-4;
+constexpr double BASE_FADE = 1e-4;
 
 constexpr int STD_FONT_SIZE = 20;
 
@@ -150,7 +150,7 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
     DrawText("Colour", 920, 250, STD_FONT_SIZE, WHITE);
     GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &state.colour);
 
-    DrawText("Additive Blending", 920, 550, STD_FONT_SIZE, WHITE);
+    DrawText("Blending", 920, 550, STD_FONT_SIZE, WHITE);
     GuiCheckBox((Rectangle) { 1120, 550, 20, 20 }, NULL, &state.blend);
 
     DrawText("Auto Colours", 920, 600, STD_FONT_SIZE, WHITE);
@@ -234,7 +234,7 @@ int main() {
     Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
-    InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "diffuser");
+    InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "Diffuser");
     GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
