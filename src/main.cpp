@@ -22,7 +22,7 @@ constexpr double DIFF_DEF = 0.0;
 constexpr double VISC_DEF = 0.0;
 constexpr double PARTICLE_SIZE_DEF = 5.0; 
 constexpr int COLOUR_CHANGE_PERIOD = 4;
-constexpr double BASE_FADE = 1e-4;
+constexpr double BASE_FADE = 3e-4;
 
 constexpr int STD_FONT_SIZE = 20;
 
