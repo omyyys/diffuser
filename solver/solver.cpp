@@ -10,14 +10,17 @@
 
 #include "solver.hpp"
 
+// Checks if two doubles are equal, with tolerance = eps
 inline bool double_eq(double a, double b, double eps = 1e-6) {
     return fabs(a - b) < eps;
 }
 
+// Clamps value to range [range_start, range_end], making sure it can never be out of that range
 inline double constrain(double value, double range_start, double range_end) {
     return (value > range_end) ? range_end : (value < range_start) ? range_start : value;
 }
 
+// Translate value from range [cur_min, cur_max] to [res_min, res_max]. For example, 0.5 tranlated from [0, 1] to [0, 10] is 5.
 double translate_value(double value, double cur_min, double cur_max, double res_min, double res_max) {
     value = constrain(value, cur_min, cur_max); 
 
@@ -29,6 +32,7 @@ double translate_value(double value, double cur_min, double cur_max, double res_
     return res_min + normalised_value * res_range;
 }
 
+// Perform binlinear intepolation on point (x, y) with respect to cell (cell_x, cell_y)
 double bilinear_interpolation(Scalar_Field &field, double x, double y, int cell_x, int cell_y) {
     double weight_right_x = x - cell_x;
     double weight_left_x = 1.0 - weight_right_x;
@@ -39,11 +43,13 @@ double bilinear_interpolation(Scalar_Field &field, double x, double y, int cell_
            weight_right_x * (weight_bottom_y * field[cell_x+1][cell_y] + weight_top_y * field[cell_x+1][cell_y+1]);
 }
 
+// Set transparency (alpha) of colour based on value in the range [min, max]
 Color get_colour_with_alpha(Color base, double val, double min, double max) { 
     base.a = translate_value(val, min, max, 0, 255);
     return base;
 }
 
+// Get a colour with a "temperature" (brightness) corresponding to the value in the range [min, max]
 Color get_colour_temp(Color color, double val, double min, double max) {
     Vector3 complement_hsv = ColorToHSV(color);
     complement_hsv.x = ((int) complement_hsv.x + 180) % 360;
@@ -181,6 +187,7 @@ Scalar_Field Vector_Field::curl(double h) {
     return result;
 }
 
+// Set all boundary cells in a field x to bnd_val
 void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
     for (int i = 0; i < nx; i++) {
         x[i][0] = x[i][nx-1] = bnd_val;
@@ -188,6 +195,7 @@ void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
     }
 }
 
+// Use the Gauss-Seidel method to solve a linear system of equations, whose coefficients are in the scalar fields x and x0.
 void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < x.rows - 1; i++) {
@@ -204,6 +212,7 @@ void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int 
     }
 }
 
+// Apply advection onto the density using dens0, vel_x, and vel_y
 void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x, Scalar_Field &vel_y) {
     int cell_x, cell_y;
     double dtx = dt * (nx - 2);
@@ -224,6 +233,7 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
     set_bounds(dens);
 }
 
+// Project the velocity by applying u = u0 − ∇p
 void Fluid::project_velocity() {
     vel.x.reset();
     vel.y = vel0.div(nx);
@@ -237,6 +247,7 @@ void Fluid::project_velocity() {
     set_bounds(vel0.y);
 }
 
+// DIffuse the velocity by solving the diffusion equation d(vel)/dt = (visc)(∇^2)(vel)
 void Fluid::diffuse_velocity() {
     double a = dt * visc * nx * nx;
 
@@ -244,11 +255,13 @@ void Fluid::diffuse_velocity() {
     gauss_seidel_solve(vel0.y, vel.y, a);
 }
 
+// DIffuse the density by solving the diffusion equation d(dens)/dt = (diff)(∇^2)(dens)
 void Fluid::diffuse_density() {
     double a = dt * diff * nx * nx;
     gauss_seidel_solve(density_temp, density, a);
 }
 
+// Sequentically apply all the steps needed to complete one timestep of the similation
 void Fluid::step() {
     diffuse_velocity();
 
