@@ -1,3 +1,5 @@
+// Uses Raylib 5.5
+
 // TODO: Perlin noise for fade and for random spawn
 // TODO: Help icons for info about the simulation
 
@@ -195,7 +197,7 @@ void draw_info(UI_State state) {
 
 void handle_input(UI_State &state, Fluid &fluid) {
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) && mouse_is_in_window(state.mouse, state.scale)) { 
-        Vector2 mouse_travelled = Vector2Subtract(state.mouse, state.mouse_prev);
+        Vector2 mouse_travelled = state.mouse - state.mouse_prev;
 
         fluid.add_density(state.mouse.x / state.scale, 
                             state.mouse.y / state.scale, 1.0);

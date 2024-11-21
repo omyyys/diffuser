@@ -2951,6 +2951,7 @@ int GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, in
     return result;
 }
 
+/*
 // Get float value from text
 // NOTE: This function replaces atof() [stdlib.h]
 // WARNING: Only '.' character is understood as decimal point
@@ -2981,6 +2982,7 @@ static float TextToFloat (const char *text)
     
     return value;
 }
+*/
 
 
 // Floating point Value Box control, updates input val_str with numbers
