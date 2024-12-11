@@ -77,6 +77,7 @@ std::vector<double>& Scalar_Field::operator[](int index) {
     return elements[index];
 }
 
+// Adding two scalar fields as matrices
 Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
     Scalar_Field result(rows, cols);
 
@@ -89,6 +90,7 @@ Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
     return result;
 }
 
+// Subtracting two scalar fields as matrices
 Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
     Scalar_Field result(rows, cols);
 
@@ -101,6 +103,7 @@ Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
     return result;
 }
 
+// Set all elements in scalar field to zero
 void Scalar_Field::reset() {
     for (auto& vec : elements) std::fill(vec.begin(), vec.end(), 0);
 }
@@ -130,10 +133,12 @@ Vector_Field::Vector_Field(Scalar_Field _x, Scalar_Field _y) {
     y = _y;
 }
 
+// Adding two vector fields by adding their respective scalar parts
 Vector_Field Vector_Field::operator+(Vector_Field b) {
     return Vector_Field(x + b.x, y + b.y);
 }
 
+// Subtracting two vector fields by adding their respective scalar parts
 Vector_Field Vector_Field::operator-(Vector_Field b) {
     return Vector_Field(x - b.x, y - b.y);
 }
@@ -159,10 +164,8 @@ Scalar_Field Vector_Field::div(double h) {
     for (int i = 1; i < x.rows - 1; i++) {
         for (int j = 1; j < y.cols - 1; j++) {
             result[i][j] = -0.5 * (
-                    x[i+1][j] -
-                    x[i-1][j] +
-                    y[i][j+1] -
-                    y[i][j-1]
+                    x[i+1][j] - x[i-1][j] +
+                    y[i][j+1] - y[i][j-1]
 
                 ) / h;
         }
@@ -275,15 +278,18 @@ void Fluid::step() {
     advect(density, density_temp, vel.x, vel.y);
 }
 
+// Add an amount amt to the density at x, y
 void Fluid::add_density(int x, int y, double amt) {
     density[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt; 
 }
 
+// Add an amount amt_x to x-velocity at x, y and amt_y to y-velocity at x, y
 void Fluid::add_velocity(int x, int y, double amt_x, double amt_y) {    
     vel.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
     vel.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
 }
 
+// Render the density on the screen with rectangles by converting the density values to colours
 void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
@@ -296,6 +302,7 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
     }
 }
 
+// Render the velocity on the screen with lines as vectors
 void Fluid::render_velocity(int scale, Color colour, float line_length) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
@@ -309,6 +316,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
     }
 }
 
+// Render the vorticity on the screen with rectangles by converting the density values to colours
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     Scalar_Field vorticity = vel.curl();
     set_bounds(vorticity);
@@ -325,6 +333,7 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
     }
 }
 
+// Subtract an amount fade from every element in the density field, in order to create a fading effect.
 void Fluid::fade_density(double fade) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
@@ -333,6 +342,7 @@ void Fluid::fade_density(double fade) {
     }
 }
 
+// Reset every field in the simulation
 void Fluid::reset() {
     density_temp.reset();
     density.reset();
