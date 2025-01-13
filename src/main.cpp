@@ -14,7 +14,7 @@
 #define RAYGUI_IMPLEMENTATION
 #include "../raygui/src/raygui.h"
  
-#include "../solver/solver.hpp"
+#include "../include/solver.hpp"
 
 using namespace std;
 

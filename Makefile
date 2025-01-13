@@ -5,5 +5,5 @@ CPPLIBS=-L./raylib-macos/lib -Wl,-rpath ./raylib-macos/lib/ -lraylib -lm
 
 all: diffuser
 
-diffuser: src/main.cpp solver/solver.cpp solver/solver.hpp
-	$(CC) $(CPPFLAGS) $(OPT) -o diffuser src/main.cpp solver/solver.cpp $(CPPLIBS) 
+diffuser: src/main.cpp src/solver.cpp include/solver.hpp
+	$(CC) $(CPPFLAGS) $(OPT) -o diffuser src/main.cpp src/solver.cpp $(CPPLIBS) 

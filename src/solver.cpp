@@ -8,7 +8,7 @@
 #include "../raylib/include/raylib.h"
 #include "../raylib/include/raymath.h"
 
-#include "solver.hpp"
+#include "../include/solver.hpp"
 
 // Checks if two doubles are equal, with tolerance = eps
 inline bool double_eq(double a, double b, double eps = 1e-6) {
