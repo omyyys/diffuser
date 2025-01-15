@@ -308,7 +308,7 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
         for (int j = 1; j < nx - 1; j++) {
             Vector2 position = {.x = (float) (i*scale), .y = (float) (j*scale) };
             Vector2 velocity = {.x = (float) vel.x[i][j], .y = (float) vel.y[i][j]};
-            Vector2 velocity_normal = Vector2Normalize(velocity) * 4*line_length;
+            Vector2 velocity_normal = Vector2Normalize(velocity) * line_length;
 
             if (velocity_normal == Vector2Zero()) DrawPixelV(position, colour);
             DrawLineEx(position, velocity_normal + position, 3, colour);
