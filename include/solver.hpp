@@ -68,7 +68,4 @@ class Fluid {
     void render_vorticity(int scale, Color colour, float particle_size);
     void fade_density(double fade);
     void reset();
-
-    private:
-    void debug_print_density(FILE *out = stdout);
 };

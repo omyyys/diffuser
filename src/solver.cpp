@@ -351,13 +351,3 @@ void Fluid::reset() {
     vel0.x.reset();
     vel0.y.reset();
 }
-
-void Fluid::debug_print_density(FILE *f) {
-    for (int i = 0; i < nx; i++) {
-        fprintf(f, "{ ");
-        for (int j = 0; j < nx; j++) {
-            fprintf(f, "%lf ", density[i][j]);
-        }
-        fprintf(f, "}\n");
-    } 
-}
