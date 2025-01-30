@@ -33,7 +33,7 @@ double translate_value(double value, double cur_min, double cur_max, double res_
 }
 
 // Perform binlinear intepolation on point (x, y) with respect to cell (cell_x, cell_y)
-double bilinear_interpolation(Scalar_Field &field, double x, double y, int cell_x, int cell_y) {
+double bilinear_interpolation(ScalarField &field, double x, double y, int cell_x, int cell_y) {
     double weight_right_x = x - cell_x;
     double weight_left_x = 1.0 - weight_right_x;
     double weight_top_y = y - cell_y;
@@ -63,23 +63,25 @@ Color get_colour_temp(Color color, double val, double min, double max) {
     };
 }
 
-Scalar_Field::Scalar_Field(int _rows, int _cols) {
+ScalarField::ScalarField(int _rows, int _cols) {
     rows = _rows;
     cols = _cols;
     elements = std::vector(_rows, std::vector<double>(_cols, 0));
 }
 
-std::vector<double> Scalar_Field::operator[](int index) const {
+// Access row in scalar field for reading
+std::vector<double> ScalarField::operator[](int index) const {
     return elements[index];
 }
 
-std::vector<double>& Scalar_Field::operator[](int index) {
+// Access row from scalar field for writing
+std::vector<double>& ScalarField::operator[](int index) {
     return elements[index];
 }
 
 // Adding two scalar fields as matrices
-Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
-    Scalar_Field result(rows, cols);
+ScalarField ScalarField::operator+(ScalarField b) {
+    ScalarField result(rows, cols);
 
     for (int i = 1; i < rows - 1; i++) {
         for (int j = 1; j < cols - 1; j++) {
@@ -91,8 +93,8 @@ Scalar_Field Scalar_Field::operator+(Scalar_Field b) {
 }
 
 // Subtracting two scalar fields as matrices
-Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
-    Scalar_Field result(rows, cols);
+ScalarField ScalarField::operator-(ScalarField b) {
+    ScalarField result(rows, cols);
 
     for (int i = 1; i < rows - 1; i++) {
         for (int j = 1; j < cols - 1; j++) {
@@ -103,8 +105,21 @@ Scalar_Field Scalar_Field::operator-(Scalar_Field b) {
     return result;
 }
 
+// Set all boundary cells in a field x to bnd_val
+void ScalarField::set_bounds(double bnd_val) {
+    if (rows == 0 || cols == 0) return;
+
+    for (int j = 0; j < rows; i++) {
+        elements[i][0] = elements[i][cols - 1] = 0;
+    }
+
+    for (int i = 0; i < cols; ++j) {
+        elements[0][i] = elements[rows - 1][i] = 0;
+    }
+}
+
 // Set all elements in scalar field to zero
-void Scalar_Field::reset() {
+void ScalarField::reset() {
     for (auto& vec : elements) std::fill(vec.begin(), vec.end(), 0);
 }
 
@@ -114,38 +129,38 @@ Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     visc = _visc;
     dt = _dt;
 
-    density_temp = Scalar_Field(nx, nx);
-    density = Scalar_Field(nx, nx);
+    density_temp = ScalarField(nx, nx);
+    density = ScalarField(nx, nx);
 
-    vel = Vector_Field (
-        Scalar_Field(nx, nx),
-        Scalar_Field(nx, nx)
+    vel = VectorField (
+        ScalarField(nx, nx),
+        ScalarField(nx, nx)
     );
 
-    vel0 = Vector_Field (
-        Scalar_Field(nx, nx),
-        Scalar_Field(nx, nx)
+    vel0 = VectorField (
+        ScalarField(nx, nx),
+        ScalarField(nx, nx)
     );
 }
 
-Vector_Field::Vector_Field(Scalar_Field _x, Scalar_Field _y) {
+VectorField::VectorField(ScalarField _x, ScalarField _y) {
     x = _x;
     y = _y;
 }
 
 // Adding two vector fields by adding their respective scalar parts
-Vector_Field Vector_Field::operator+(Vector_Field b) {
-    return Vector_Field(x + b.x, y + b.y);
+VectorField VectorField::operator+(VectorField b) {
+    return VectorField(x + b.x, y + b.y);
 }
 
 // Subtracting two vector fields by adding their respective scalar parts
-Vector_Field Vector_Field::operator-(Vector_Field b) {
-    return Vector_Field(x - b.x, y - b.y);
+VectorField VectorField::operator-(VectorField b) {
+    return VectorField(x - b.x, y - b.y);
 }
 
 // https://en.wikipedia.org/wiki/Gradient
-Vector_Field Vector_Field::grad(double h) {
-    Vector_Field result(x, y);
+VectorField VectorField::grad(double h) {
+    VectorField result(x, y);
 
     for (int i = 1; i < x.rows - 1; i++) {
         for (int j = 1; j < y.rows - 1; j++) {
@@ -158,8 +173,8 @@ Vector_Field Vector_Field::grad(double h) {
 }
 
 // https://en.wikipedia.org/wiki/Divergence
-Scalar_Field Vector_Field::div(double h) {
-    Scalar_Field result(x.rows, x.cols);
+ScalarField VectorField::div(double h) {
+    ScalarField result(x.rows, x.cols);
 
     for (int i = 1; i < x.rows - 1; i++) {
         for (int j = 1; j < y.cols - 1; j++) {
@@ -175,8 +190,8 @@ Scalar_Field Vector_Field::div(double h) {
 }
 
 // https://scicomp.stackexchange.com/questions/21915/discrete-definitions-of-curl-nabla-times-f
-Scalar_Field Vector_Field::curl(double h) {
-    Scalar_Field result(x.rows, x.cols);
+ScalarField VectorField::curl(double h) {
+    ScalarField result(x.rows, x.cols);
 
     for (int i = 1; i < x.rows - 1; i++) {
         for (int j = 1; j < y.rows - 1; j++) {
@@ -190,16 +205,8 @@ Scalar_Field Vector_Field::curl(double h) {
     return result;
 }
 
-// Set all boundary cells in a field x to bnd_val
-void Fluid::set_bounds(Scalar_Field &x, double bnd_val) {
-    for (int i = 0; i < nx; i++) {
-        x[i][0] = x[i][nx-1] = bnd_val;
-        x[0][1] = x[nx-1][i] = bnd_val;
-    }
-}
-
 // Use the Gauss-Seidel method to solve a linear system of equations, whose coefficients are in the scalar fields x and x0.
-void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter) {
+void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int iter) {
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < x.rows - 1; i++) {
             for (int j = 1; j < x.cols - 1; j++) {
@@ -211,12 +218,12 @@ void Fluid::gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int 
             }
         }
 
-        set_bounds(x);
+        x.set_bounds();
     }
 }
 
 // Apply advection onto the density using dens0, vel_x, and vel_y
-void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x, Scalar_Field &vel_y) {
+void Fluid::advect(ScalarField &dens, ScalarField &dens0, ScalarField &vel_x, ScalarField &vel_y) {
     int cell_x, cell_y;
     double dtx = dt * (nx - 2);
     double x, y;
@@ -233,7 +240,7 @@ void Fluid::advect(Scalar_Field &dens, Scalar_Field &dens0, Scalar_Field &vel_x,
         }
     }
 
-    set_bounds(dens);
+    dens.set_bounds();
 }
 
 // Project the velocity by applying u = u0 − ∇p
@@ -241,13 +248,13 @@ void Fluid::project_velocity() {
     vel.x.reset();
     vel.y = vel0.div(nx);
 
-    set_bounds(vel.y);
+    vel.y.set_bounds();
 
     gauss_seidel_solve(vel.x, vel.y, 1);
     vel0 = vel0 - vel.grad(nx);
 
-    set_bounds(vel0.x);
-    set_bounds(vel0.y);
+    vel0.x.set_bounds();
+    vel0.y.set_bounds();
 }
 
 // DIffuse the velocity by solving the diffusion equation d(vel)/dt = (visc)(∇^2)(vel)
@@ -318,8 +325,8 @@ void Fluid::render_velocity(int scale, Color colour, float line_length) {
 
 // Render the vorticity on the screen with rectangles by converting the density values to colours
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
-    Scalar_Field vorticity = vel.curl();
-    set_bounds(vorticity);
+    ScalarField vorticity = vel.curl();
+    vorticity.set_bounds();
 
     for (int i = 2; i < nx - 2; i++) {
         for (int j = 2; j < nx - 2; j++) {

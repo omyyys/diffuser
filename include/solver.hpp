@@ -7,33 +7,34 @@
 double translate_value(double value, double cur_min, double cur_max, double res_min, double res_max);
 double constrain(double value, double range_start, double range_end);
 
-class Scalar_Field {
+class ScalarField {
     public:
     int rows, cols;
     std::vector<std::vector<double>> elements;
 
-    Scalar_Field() = default;
-    Scalar_Field(int rows, int cols);
+    ScalarField() = default;
+    ScalarField(int rows, int cols);
     std::vector<double> operator[] (int index) const; 
     std::vector<double>& operator[] (int index); 
-    Scalar_Field operator+(Scalar_Field b); 
-    Scalar_Field operator-(Scalar_Field b);
+    ScalarField operator+(ScalarField b); 
+    ScalarField operator-(ScalarField b);
 
+    void set_bounds(double bnd_val = 0.0);
     void reset();
 };
 
-class Vector_Field {
+class VectorField {
     public:
-    Scalar_Field x, y;
+    ScalarField x, y;
 
-    Vector_Field() = default;
-    Vector_Field(Scalar_Field _x, Scalar_Field _y);
-    Vector_Field operator+(Vector_Field b); 
-    Vector_Field operator-(Vector_Field b);
+    VectorField() = default;
+    VectorField(ScalarField _x, ScalarField _y);
+    VectorField operator+(VectorField b); 
+    VectorField operator-(VectorField b);
 
-    Vector_Field grad(double h = 1.0);
-    Scalar_Field curl(double h = 1.0);
-    Scalar_Field div(double h = 1.0);
+    VectorField grad(double h = 1.0);
+    ScalarField curl(double h = 1.0);
+    ScalarField div(double h = 1.0);
 };
 
 class Fluid {
@@ -44,11 +45,11 @@ class Fluid {
     double diff;
     double visc;
     
-    Scalar_Field density_temp;
-    Scalar_Field density;
+    ScalarField density_temp;
+    ScalarField density;
     
-    Vector_Field vel;
-    Vector_Field vel0;
+    VectorField vel;
+    VectorField vel0;
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);
@@ -56,9 +57,8 @@ class Fluid {
     void add_density(int x, int y, double amt); 
     void add_velocity(int x, int y, double amt_x, double amt_y);
 
-    void set_bounds(Scalar_Field &x, double bnd_val = 0.0);
-    void gauss_seidel_solve(Scalar_Field &x, Scalar_Field &x0, double a, int iter = 20);
-    void advect(Scalar_Field &d, Scalar_Field &d0, Scalar_Field &vx, Scalar_Field &vy);
+    void gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int iter = 20);
+    void advect(ScalarField &d, ScalarField &d0, ScalarField &vx, ScalarField &vy);
     void project_velocity();
     void diffuse_velocity();
     void diffuse_density();
