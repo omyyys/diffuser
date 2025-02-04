@@ -1,6 +1,5 @@
 // Uses Raylib 5.5
 
-// TODO: Perlin noise for fade and for random spawn
 // TODO: Help icons for info about the simulation
 
 #include <cstdio>
@@ -101,7 +100,7 @@ void random_spawn(Fluid &fluid, int splats) {
 
 Color get_colour(int timesteps) {
     return ColorFromHSV (
-        timesteps % 360,
+        fmod(timesteps * 0.5, 360),
         1, 
         0.6
     );
