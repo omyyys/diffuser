@@ -109,12 +109,12 @@ ScalarField ScalarField::operator-(ScalarField b) {
 void ScalarField::set_bounds(double bnd_val) {
     if (rows == 0 || cols == 0) return;
 
-    for (int j = 0; j < rows; i++) {
+    for (int i = 0; i < rows; i++) {
         elements[i][0] = elements[i][cols - 1] = 0;
     }
 
-    for (int i = 0; i < cols; ++j) {
-        elements[0][i] = elements[rows - 1][i] = 0;
+    for (int j = 0; j < cols; j++) {
+        elements[0][j] = elements[rows - 1][j] = 0;
     }
 }
 
@@ -211,10 +211,8 @@ void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int it
         for (int i = 1; i < x.rows - 1; i++) {
             for (int j = 1; j < x.cols - 1; j++) {
                 x[i][j] =  (x0[i][j] + a *
-                               (x[i+1][j] +
-                                x[i-1][j] +
-                                x[i][j+1] +
-                                x[i][j-1] )) * 1.0/(4*a + 1);
+                               (x[i+1][j] + x[i-1][j] +
+                                x[i][j+1] + x[i][j-1] )) * 1.0/(4*a + 1);
             }
         }
 
@@ -274,7 +272,6 @@ void Fluid::diffuse_density() {
 // Sequentically apply all the steps needed to complete one timestep of the similation
 void Fluid::step() {
     diffuse_velocity();
-
     project_velocity();
 
     advect(vel.x, vel0.x, vel0.x, vel0.y);
@@ -301,8 +298,8 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
             double dens = density[i][j];
-            
             if (double_eq(dens, 0.0)) continue;
+            
             DrawRectangle(i*scale, j*scale, particle_size*scale, particle_size*scale, 
                     get_colour_with_alpha(colour, dens, 0, 1)); 
         }
