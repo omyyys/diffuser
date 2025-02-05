@@ -42,14 +42,14 @@ class Fluid {
 
     int nx;
     double dt;
-    double diff;
-    double visc;
+    double diffusion;
+    double viscosity;
     
     ScalarField density_temp;
     ScalarField density;
     
-    VectorField vel;
-    VectorField vel0;
+    VectorField velocity;
+    VectorField velocity_prev;
 
     Fluid() = default;
     Fluid(int _nx, double _diff, double _visc, double _dt);

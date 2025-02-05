@@ -10,9 +10,10 @@
 
 #include "../include/solver.hpp"
 
-// Checks if two doubles are equal, with tolerance = eps
+constexpr int VELOCITY_LINE_THICKNESS = 3;
+
 inline bool double_eq(double a, double b, double eps = 1e-6) {
-    return fabs(a - b) < eps;
+    return fabs(a - b) <= eps * fmax(fabs(a), fabs(b));
 }
 
 // Clamps value to range [range_start, range_end], making sure it can never be out of that range
@@ -32,7 +33,6 @@ double translate_value(double value, double cur_min, double cur_max, double res_
     return res_min + normalised_value * res_range;
 }
 
-// Perform binlinear intepolation on point (x, y) with respect to cell (cell_x, cell_y)
 double bilinear_interpolation(ScalarField &field, double x, double y, int cell_x, int cell_y) {
     double weight_right_x = x - cell_x;
     double weight_left_x = 1.0 - weight_right_x;
@@ -49,7 +49,6 @@ Color get_colour_with_alpha(Color base, double val, double min, double max) {
     return base;
 }
 
-// Get a colour with a "temperature" (brightness) corresponding to the value in the range [min, max]
 Color get_colour_temp(Color color, double val, double min, double max) {
     Vector3 complement_hsv = ColorToHSV(color);
     complement_hsv.x = ((int) complement_hsv.x + 180) % 360;
@@ -69,17 +68,14 @@ ScalarField::ScalarField(int _rows, int _cols) {
     elements = std::vector(_rows, std::vector<double>(_cols, 0));
 }
 
-// Access row in scalar field for reading
 std::vector<double> ScalarField::operator[](int index) const {
     return elements[index];
 }
 
-// Access row from scalar field for writing
 std::vector<double>& ScalarField::operator[](int index) {
     return elements[index];
 }
 
-// Adding two scalar fields as matrices
 ScalarField ScalarField::operator+(ScalarField b) {
     ScalarField result(rows, cols);
 
@@ -92,7 +88,6 @@ ScalarField ScalarField::operator+(ScalarField b) {
     return result;
 }
 
-// Subtracting two scalar fields as matrices
 ScalarField ScalarField::operator-(ScalarField b) {
     ScalarField result(rows, cols);
 
@@ -105,39 +100,37 @@ ScalarField ScalarField::operator-(ScalarField b) {
     return result;
 }
 
-// Set all boundary cells in a field x to bnd_val
 void ScalarField::set_bounds(double bnd_val) {
     if (rows == 0 || cols == 0) return;
 
     for (int i = 0; i < rows; i++) {
-        elements[i][0] = elements[i][cols - 1] = 0;
+        elements[i][0] = elements[i][cols - 1] = bnd_val;
     }
 
     for (int j = 0; j < cols; j++) {
-        elements[0][j] = elements[rows - 1][j] = 0;
+        elements[0][j] = elements[rows - 1][j] = bnd_val;
     }
 }
 
-// Set all elements in scalar field to zero
 void ScalarField::reset() {
     for (auto& vec : elements) std::fill(vec.begin(), vec.end(), 0);
 }
 
 Fluid::Fluid(int _nx, double _diff, double _visc, double _dt) {
     nx = _nx;
-    diff = _diff;
-    visc = _visc;
+    diffusion = _diff;
+    viscosity = _visc;
     dt = _dt;
 
     density_temp = ScalarField(nx, nx);
     density = ScalarField(nx, nx);
 
-    vel = VectorField (
+    velocity = VectorField (
         ScalarField(nx, nx),
         ScalarField(nx, nx)
     );
 
-    vel0 = VectorField (
+    velocity_prev = VectorField (
         ScalarField(nx, nx),
         ScalarField(nx, nx)
     );
@@ -148,12 +141,10 @@ VectorField::VectorField(ScalarField _x, ScalarField _y) {
     y = _y;
 }
 
-// Adding two vector fields by adding their respective scalar parts
 VectorField VectorField::operator+(VectorField b) {
     return VectorField(x + b.x, y + b.y);
 }
 
-// Subtracting two vector fields by adding their respective scalar parts
 VectorField VectorField::operator-(VectorField b) {
     return VectorField(x - b.x, y - b.y);
 }
@@ -206,13 +197,13 @@ ScalarField VectorField::curl(double h) {
 }
 
 // Use the Gauss-Seidel method to solve a linear system of equations, whose coefficients are in the scalar fields x and x0.
-void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int iter) {
+void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double field_coefficient, int iter) {
     for (int k = 0; k < iter; k++) {
         for (int i = 1; i < x.rows - 1; i++) {
             for (int j = 1; j < x.cols - 1; j++) {
-                x[i][j] =  (x0[i][j] + a *
+                x[i][j] =  (x0[i][j] + field_coefficient *
                                (x[i+1][j] + x[i-1][j] +
-                                x[i][j+1] + x[i][j-1] )) * 1.0/(4*a + 1);
+                                x[i][j+1] + x[i][j-1] )) * 1.0/(4*field_coefficient + 1);
             }
         }
 
@@ -220,7 +211,6 @@ void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int it
     }
 }
 
-// Apply advection onto the density using dens0, vel_x, and vel_y
 void Fluid::advect(ScalarField &dens, ScalarField &dens0, ScalarField &vel_x, ScalarField &vel_y) {
     int cell_x, cell_y;
     double dtx = dt * (nx - 2);
@@ -241,59 +231,52 @@ void Fluid::advect(ScalarField &dens, ScalarField &dens0, ScalarField &vel_x, Sc
     dens.set_bounds();
 }
 
-// Project the velocity by applying u = u0 − ∇p
 void Fluid::project_velocity() {
-    vel.x.reset();
-    vel.y = vel0.div(nx);
+    velocity.x.reset();
+    velocity.y = velocity_prev.div(nx);
 
-    vel.y.set_bounds();
+    velocity.y.set_bounds();
 
-    gauss_seidel_solve(vel.x, vel.y, 1);
-    vel0 = vel0 - vel.grad(nx);
+    gauss_seidel_solve(velocity.x, velocity.y, 1);
+    velocity_prev = velocity_prev - velocity.grad(nx);
 
-    vel0.x.set_bounds();
-    vel0.y.set_bounds();
+    velocity_prev.x.set_bounds();
+    velocity_prev.y.set_bounds();
 }
 
-// DIffuse the velocity by solving the diffusion equation d(vel)/dt = (visc)(∇^2)(vel)
 void Fluid::diffuse_velocity() {
-    double a = dt * visc * nx * nx;
+    double velocity_diffusion = dt * viscosity * nx * nx;
 
-    gauss_seidel_solve(vel0.x, vel.x, a);
-    gauss_seidel_solve(vel0.y, vel.y, a);
+    gauss_seidel_solve(velocity_prev.x, velocity.x, velocity_diffusion);
+    gauss_seidel_solve(velocity_prev.y, velocity.y, velocity_diffusion);
 }
 
-// DIffuse the density by solving the diffusion equation d(dens)/dt = (diff)(∇^2)(dens)
 void Fluid::diffuse_density() {
-    double a = dt * diff * nx * nx;
-    gauss_seidel_solve(density_temp, density, a);
+    double density_diffusion = dt * diffusion * nx * nx;
+    gauss_seidel_solve(density_temp, density, density_diffusion);
 }
 
-// Sequentically apply all the steps needed to complete one timestep of the similation
 void Fluid::step() {
     diffuse_velocity();
     project_velocity();
 
-    advect(vel.x, vel0.x, vel0.x, vel0.y);
-    advect(vel.y, vel0.y, vel0.x, vel0.y);
+    advect(velocity.x, velocity_prev.x, velocity_prev.x, velocity_prev.y);
+    advect(velocity.y, velocity_prev.y, velocity_prev.x, velocity_prev.y);
 
     diffuse_density();
 
-    advect(density, density_temp, vel.x, vel.y);
+    advect(density, density_temp, velocity.x, velocity.y);
 }
 
-// Add an amount amt to the density at x, y
 void Fluid::add_density(int x, int y, double amt) {
     density[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt; 
 }
 
-// Add an amount amt_x to x-velocity at x, y and amt_y to y-velocity at x, y
 void Fluid::add_velocity(int x, int y, double amt_x, double amt_y) {    
-    vel.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
-    vel.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
+    velocity.x[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_x;
+    velocity.y[constrain(x, 0, nx-1)][constrain(y, 0, nx-1)] += amt_y;
 }
 
-// Render the density on the screen with rectangles by converting the density values to colours
 void Fluid::render_density(int scale, Color colour, float particle_size) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
@@ -306,23 +289,21 @@ void Fluid::render_density(int scale, Color colour, float particle_size) {
     }
 }
 
-// Render the velocity on the screen with lines as vectors
 void Fluid::render_velocity(int scale, Color colour, float line_length) {
     for (int i = 1; i < nx - 1; i++) {
         for (int j = 1; j < nx - 1; j++) {
             Vector2 position = {.x = (float) (i*scale), .y = (float) (j*scale) };
-            Vector2 velocity = {.x = (float) vel.x[i][j], .y = (float) vel.y[i][j]};
-            Vector2 velocity_normal = Vector2Normalize(velocity) * line_length;
+            Vector2 cell_velocity = {.x = (float) velocity.x[i][j], .y = (float) velocity.y[i][j]};
+            Vector2 cell_velocity_normal = Vector2Normalize(cell_velocity) * line_length;
 
-            if (velocity_normal == Vector2Zero()) DrawPixelV(position, colour);
-            DrawLineEx(position, velocity_normal + position, 3, colour);
+            if (cell_velocity_normal == Vector2Zero()) DrawPixelV(position, colour);
+            DrawLineEx(position, cell_velocity_normal + position, VELOCITY_LINE_THICKNESS, colour);
         }
     }
 }
 
-// Render the vorticity on the screen with rectangles by converting the density values to colours
 void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
-    ScalarField vorticity = vel.curl();
+    ScalarField vorticity = velocity.curl();
     vorticity.set_bounds();
 
     for (int i = 2; i < nx - 2; i++) {
@@ -330,14 +311,13 @@ void Fluid::render_vorticity(int scale, Color colour, float particle_size) {
             double vort = vorticity[i][j];
             if (double_eq(vort, 0.0)) continue;
 
-            double colour_rng = visc == 0 ? 0.02 : 0.05;
+            double colour_rng = viscosity == 0 ? 0.02 : 0.05;
             DrawRectangle(i*scale, j*scale, (particle_size/4)*scale, (particle_size/4)*scale, 
                     get_colour_temp(colour, vort, -colour_rng, colour_rng));
         }
     }
 }
 
-// Subtract an amount fade from every element in the density field, in order to create a fading effect.
 void Fluid::fade_density(double fade) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
@@ -346,12 +326,11 @@ void Fluid::fade_density(double fade) {
     }
 }
 
-// Reset every field in the simulation
 void Fluid::reset() {
     density_temp.reset();
     density.reset();
-    vel.x.reset();
-    vel.y.reset();
-    vel0.x.reset();
-    vel0.y.reset();
+    velocity.x.reset();
+    velocity.y.reset();
+    velocity_prev.x.reset();
+    velocity_prev.y.reset();
 }

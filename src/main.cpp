@@ -33,7 +33,16 @@ constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
 constexpr int GUI_WIDTH = 400;
 
+constexpr float HUE_SHIFT_FACTOR = 0.5;
+constexpr int MAX_HUE = 360;
+constexpr float SATURATION = 1;
+constexpr float BRIGHTNESS = 0.6;
+
 constexpr int resolutions[] = { 80, 100, 160, 200 };
+
+int next_resolution_index(int current) {
+    return (current + 1) % (sizeof(resolutions) / sizeof(int));
+}
 
 typedef enum {
     DENSITY = 0,
@@ -43,8 +52,16 @@ typedef enum {
     
 } FieldType;
 
+FieldType field_next(FieldType current) {
+    return (FieldType) ((current + 1) % FIELDS_COUNT);
+}
+
+FieldType field_prev(FieldType current) {
+    return (FieldType) ((current - 1) % FIELDS_COUNT);
+}
+
 typedef struct {
-    int current_resolution_index; 
+    int resolution_index; 
     int nx;
     int scale;
     float visc;
@@ -65,8 +82,8 @@ typedef struct {
 } UI_State;
 
 void set_default_state(UI_State& state) {
-    state.current_resolution_index = 2; 
-    state.nx = resolutions[state.current_resolution_index];
+    state.resolution_index = 2; 
+    state.nx = resolutions[state.resolution_index];
     state.scale = WIDTH / state.nx; 
     state.visc = VISC_DEF;
     state.diff = DIFF_DEF;
@@ -100,9 +117,9 @@ void random_spawn(Fluid &fluid, int splats) {
 
 Color get_colour(int timesteps) {
     return ColorFromHSV (
-        fmod(timesteps * 0.5, 360),
-        1, 
-        0.6
+        fmod(timesteps * HUE_SHIFT_FACTOR, MAX_HUE),
+        SATURATION, 
+        BRIGHTNESS
     );
 }
 
@@ -113,12 +130,8 @@ void normalise_window_size() {
 }
 
 bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
-    Rectangle mouse_rect = (Rectangle) { mouse_pos.x, mouse_pos.y, (float) scale, (float) scale };
-    Rectangle screen_rect = (Rectangle) { 0, 0, (float) WIDTH, (float) HEIGHT };
-
-    Rectangle collision = GetCollisionRec(mouse_rect, screen_rect);
-
-    return (collision.width * collision.height) >= (mouse_rect.width * mouse_rect.height);    
+    return (mouse_pos.x >= 0 && mouse_pos.x <= WIDTH - scale &&
+            mouse_pos.y >= 0 && mouse_pos.y <= HEIGHT - scale);
 }
 
 void render(UI_State &state, Fluid &fluid) {
@@ -143,12 +156,12 @@ void render(UI_State &state, Fluid &fluid) {
 
 void get_ui_input(UI_State &state, Fluid &fluid) {
     DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-    GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "1", &state.visc, 0.0, 0.01);
-    fluid.visc = state.visc;
+    GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "0.1", &state.visc, 0.0, 0.1);
+    fluid.viscosity = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
     GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.01", &state.diff, 0.0, 0.01);
-    fluid.diff = state.diff;
+    fluid.diffusion = state.diff;
 
     DrawText("Colour", 920, 250, STD_FONT_SIZE, WHITE);
     GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &state.colour);
@@ -210,17 +223,17 @@ void handle_input(UI_State &state, Fluid &fluid) {
     if (IsKeyPressed(KEY_C)) fluid.reset();
 
     if (IsKeyPressed(KEY_R)) {
-        state.current_resolution_index = (state.current_resolution_index + 1) % (sizeof(resolutions) / sizeof(int));
-        state.nx = resolutions[state.current_resolution_index];
-        fluid = Fluid(state.nx, state.diff, state.visc, 1.0/FPS);
+        state.resolution_index = next_resolution_index(state.resolution_index);
+        state.nx = resolutions[state.resolution_index];
         state.scale = WIDTH / state.nx;
+        fluid = Fluid(state.nx, state.diff, state.visc, 1.0/FPS);
     }
 
     if (IsKeyPressed(KEY_RIGHT)) {
-        state.rendering_field = (FieldType) ((state.rendering_field + 1) % FIELDS_COUNT); 
+        state.rendering_field = field_next(state.rendering_field);
 
     } else if (IsKeyPressed(KEY_LEFT)) {
-        state.rendering_field = (FieldType) ((state.rendering_field  - 1) % FIELDS_COUNT);
+        state.rendering_field = field_prev(state.rendering_field);
     }
 
     if (IsKeyPressed(KEY_ESCAPE)) {
