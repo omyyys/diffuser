@@ -57,8 +57,8 @@ class Fluid {
     void add_density(int x, int y, double amt); 
     void add_velocity(int x, int y, double amt_x, double amt_y);
 
-    void gauss_seidel_solve(ScalarField &x, ScalarField &x0, double a, int iter = 20);
-    void advect(ScalarField &d, ScalarField &d0, ScalarField &vx, ScalarField &vy);
+    void gauss_seidel_solve(ScalarField &x, ScalarField &x0, double field_coefficient, int iter = 20);
+    void advect(ScalarField &field, ScalarField &field_prev, ScalarField &vel_x, ScalarField &vel_y);
     void project_velocity();
     void diffuse_velocity();
     void diffuse_density();

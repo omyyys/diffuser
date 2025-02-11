@@ -211,7 +211,7 @@ void Fluid::gauss_seidel_solve(ScalarField &x, ScalarField &x0, double field_coe
     }
 }
 
-void Fluid::advect(ScalarField &dens, ScalarField &dens0, ScalarField &vel_x, ScalarField &vel_y) {
+void Fluid::advect(ScalarField &field, ScalarField &field_prev, ScalarField &vel_x, ScalarField &vel_y) {
     int cell_x, cell_y;
     double dtx = dt * (nx - 2);
     double x, y;
@@ -224,11 +224,11 @@ void Fluid::advect(ScalarField &dens, ScalarField &dens0, ScalarField &vel_x, Sc
             y = constrain(j - dtx * vel_y[i][j], 0.5, nx + 0.5);
             cell_y = constrain(floorf(y), 0, nx-2); 
                 
-            dens[i][j] = bilinear_interpolation(dens0, x, y, cell_x, cell_y);
+            field[i][j] = bilinear_interpolation(field_prev, x, y, cell_x, cell_y);
         }
     }
 
-    dens.set_bounds();
+    field.set_bounds();
 }
 
 void Fluid::project_velocity() {
