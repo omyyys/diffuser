@@ -38,9 +38,11 @@ constexpr int MAX_HUE = 360;
 constexpr float SATURATION = 1;
 constexpr float BRIGHTNESS = 0.6;
 
+constexpr Color COLOUR_DEF = {.r = 65, .g = 70, .b = 186, .a = 255};
+
 constexpr int resolutions[] = { 80, 100, 160, 200 };
 
-int next_resolution_index(int current) {
+int resolution_next_index(int current) {
     return (current + 1) % (sizeof(resolutions) / sizeof(int));
 }
 
@@ -52,11 +54,11 @@ typedef enum {
     
 } FieldType;
 
-FieldType field_next(FieldType current) {
+FieldType field_type_next(FieldType current) {
     return (FieldType) ((current + 1) % FIELDS_COUNT);
 }
 
-FieldType field_prev(FieldType current) {
+FieldType field_type_prev(FieldType current) {
     return (FieldType) ((current - 1) % FIELDS_COUNT);
 }
 
@@ -81,13 +83,13 @@ typedef struct {
 
 } UI_State;
 
-void set_default_state(UI_State& state) {
+void ui_state_init(UI_State& state) {
     state.resolution_index = 2; 
     state.nx = resolutions[state.resolution_index];
     state.scale = WIDTH / state.nx; 
     state.visc = VISC_DEF;
     state.diff = DIFF_DEF;
-    state.colour = {.r = 65, .g = 70, .b = 186, .a = 255};
+    state.colour = COLOUR_DEF;
     state.blend = true;
     state.colour_change = false; 
     state.random_spawn = false; 
@@ -99,6 +101,10 @@ void set_default_state(UI_State& state) {
     state.mouse_prev = Vector2Zero(); 
 
     state.timesteps = 0;
+}
+
+void toggle_pause(UI_State &state) {
+    state.paused = !state.paused;
 }
 
 double rand_double(double start, double end) {
@@ -214,7 +220,7 @@ void handle_input(UI_State &state, Fluid &fluid) {
         Vector2 mouse_travelled = state.mouse - state.mouse_prev;
 
         fluid.add_density(state.mouse.x / state.scale, 
-                            state.mouse.y / state.scale, 1.0);
+                            state.mouse.y / state.scale, Vector2Length(mouse_travelled));
 
         fluid.add_velocity(state.mouse.x / state.scale, 
                             state.mouse.y / state.scale, mouse_travelled.x, mouse_travelled.y); 
@@ -223,21 +229,21 @@ void handle_input(UI_State &state, Fluid &fluid) {
     if (IsKeyPressed(KEY_C)) fluid.reset();
 
     if (IsKeyPressed(KEY_R)) {
-        state.resolution_index = next_resolution_index(state.resolution_index);
+        state.resolution_index = resolution_next_index(state.resolution_index);
         state.nx = resolutions[state.resolution_index];
         state.scale = WIDTH / state.nx;
         fluid = Fluid(state.nx, state.diff, state.visc, 1.0/FPS);
     }
 
     if (IsKeyPressed(KEY_RIGHT)) {
-        state.rendering_field = field_next(state.rendering_field);
+        state.rendering_field = field_type_next(state.rendering_field);
 
     } else if (IsKeyPressed(KEY_LEFT)) {
-        state.rendering_field = field_prev(state.rendering_field);
+        state.rendering_field = field_type_prev(state.rendering_field);
     }
 
     if (IsKeyPressed(KEY_ESCAPE)) {
-        state.paused = !state.paused;
+        toggle_pause(state);
     }
 }
 
@@ -245,7 +251,7 @@ int main() {
     srand(time(NULL));
 
     UI_State state;
-    set_default_state(state);
+    ui_state_init(state);
 
     Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
 
@@ -280,8 +286,8 @@ int main() {
 
         render(state, fluid);
         get_ui_input(state, fluid);
-        draw_info(state);
         handle_input(state, fluid);
+        draw_info(state);
  
         EndDrawing();
     }
