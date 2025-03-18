@@ -287,7 +287,7 @@ void main_menu_update(App_State &app_state) {
         app_state = APP_STATE_SIMULATION;
     }
 
-    if (GuiButton((Rectangle){ 500, 450, 300, 80 }, "Exit")) exit(0);
+    if (GuiButton((Rectangle){ 500, 450, 500, 80 }, "Exit")) exit(0);
 }
 
 int main() {
@@ -306,6 +306,10 @@ int main() {
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
 
+    Image main_menu_bg = LoadImage("menu_bg.png");
+    Texture2D main_menu_bg_texture = LoadTextureFromImage(main_menu_bg);
+    UnloadImage(main_menu_bg);
+
     while (!WindowShouldClose()) {
         normalise_window_size();
 
@@ -313,6 +317,7 @@ int main() {
         ClearBackground(BLACK);
 
         if (app_state == APP_STATE_MAIN_MENU) {
+            DrawTexture(main_menu_bg_texture, GetScreenWidth() - main_menu_bg_texture.width, GetScreenHeight() - main_menu_bg_texture.height, WHITE);
             main_menu_update(app_state);
 
         } else if (app_state == APP_STATE_SIMULATION) {
