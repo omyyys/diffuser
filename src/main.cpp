@@ -28,6 +28,8 @@ constexpr int COLOUR_CHANGE_PERIOD = 4;
 constexpr double BASE_FADE = 3e-4;
 
 constexpr int STD_FONT_SIZE = 20;
+constexpr int MAIN_MENU_TITLE_SIZE = 100;
+constexpr int MAIN_MENU_STD_FONT_SIZE = 40;
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
@@ -82,6 +84,12 @@ typedef struct {
     int timesteps;
 
 } UI_State;
+
+typedef enum {
+    APP_STATE_MAIN_MENU,
+    APP_STATE_SIMULATION
+
+} App_State;
 
 void ui_state_init(UI_State& state) {
     state.resolution_index = 2; 
@@ -247,48 +255,70 @@ void handle_input(UI_State &state, Fluid &fluid) {
     }
 }
 
+void simulation_update(UI_State &ui_state, Fluid &fluid) {
+    ui_state.mouse_prev = ui_state.mouse;
+    ui_state.mouse = GetMousePosition();
+
+    if (!ui_state.paused) {
+        fluid.step();
+        fluid.fade_density(BASE_FADE + ui_state.visc * 0.001);
+        ui_state.timesteps++;
+    }
+
+    if (ui_state.colour_change && ui_state.timesteps % COLOUR_CHANGE_PERIOD == 0) {
+        ui_state.colour = get_colour(ui_state.timesteps); 
+    }
+
+    if (ui_state.random_spawn && ui_state.timesteps % ui_state.random_splat_period == 0) {
+        random_spawn(fluid, ui_state.nx);
+    }
+
+    render(ui_state, fluid);
+    get_ui_input(ui_state, fluid);
+    handle_input(ui_state, fluid);
+    draw_info(ui_state);
+}
+
+void main_menu_update(App_State &app_state) {
+    DrawText("diffuser", 100, 100, MAIN_MENU_TITLE_SIZE, WHITE);
+
+    if (GuiButton((Rectangle){ 500, 300, 500, 100 }, "Start")) {
+        GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE);
+        app_state = APP_STATE_SIMULATION;
+    }
+
+    if (GuiButton((Rectangle){ 500, 450, 300, 80 }, "Exit")) exit(0);
+}
+
 int main() {
     srand(time(NULL));
 
-    UI_State state;
-    ui_state_init(state);
+    UI_State ui_state;
+    ui_state_init(ui_state);
 
-    Fluid fluid(state.nx, state.diff, state.visc, 1.0/FPS);
+    App_State app_state = APP_STATE_MAIN_MENU;
+
+    Fluid fluid(ui_state.nx, ui_state.diff, ui_state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
     InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "Diffuser");
-    GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE); 
+    GuiSetStyle(DEFAULT, TEXT_SIZE, MAIN_MENU_STD_FONT_SIZE); 
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
 
     while (!WindowShouldClose()) {
         normalise_window_size();
 
-        state.mouse_prev = state.mouse;
-        state.mouse = GetMousePosition();
-
         BeginDrawing();
         ClearBackground(BLACK);
 
-        if (!state.paused) {
-            fluid.step();
-            fluid.fade_density(BASE_FADE + state.visc * 0.001);
-            state.timesteps++;
+        if (app_state == APP_STATE_MAIN_MENU) {
+            main_menu_update(app_state);
+
+        } else if (app_state == APP_STATE_SIMULATION) {
+            simulation_update(ui_state, fluid);
         }
 
-        if (state.colour_change && state.timesteps % COLOUR_CHANGE_PERIOD == 0) {
-            state.colour = get_colour(state.timesteps); 
-        }
-
-        if (state.random_spawn && state.timesteps % state.random_splat_period == 0) {
-            random_spawn(fluid, state.nx);
-        }
-
-        render(state, fluid);
-        get_ui_input(state, fluid);
-        handle_input(state, fluid);
-        draw_info(state);
- 
         EndDrawing();
     }
 
