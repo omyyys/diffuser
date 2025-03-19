@@ -48,6 +48,21 @@ int resolution_next_index(int current) {
     return (current + 1) % (sizeof(resolutions) / sizeof(int));
 }
 
+std::string resolution_to_description(int resolution) {
+    switch (resolution) {
+        case 80:
+            return "very low";
+        case 100:
+            return "low";
+        case 160:
+            return "medium";
+        case 200:
+            return "high";
+        default:
+            return "unknown resolution";
+    }
+}
+
 typedef enum {
     DENSITY = 0,
     VELOCITY,
@@ -198,7 +213,7 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
 }
 
 void draw_info(UI_State state) {
-    DrawText(TextFormat("grid resolution: %d", state.nx), 20, 20, STD_FONT_SIZE, WHITE);
+    DrawText(TextFormat("grid resolution: %s", resolution_to_description(state.nx).c_str()), 20, 20, STD_FONT_SIZE, WHITE);
 
     if (state.rendering_field == DENSITY) {
         DrawText("rendering density", 20, 50, STD_FONT_SIZE, WHITE);
@@ -279,7 +294,8 @@ void simulation_update(UI_State &ui_state, Fluid &fluid) {
     draw_info(ui_state);
 }
 
-void main_menu_update(App_State &app_state) {
+void main_menu_update(App_State &app_state, Texture bg_texture) {
+    DrawTexture(bg_texture, GetScreenWidth() - bg_texture.width, GetScreenHeight() - bg_texture.height, WHITE);
     DrawText("diffuser", 100, 100, MAIN_MENU_TITLE_SIZE, WHITE);
 
     if (GuiButton((Rectangle){ 500, 300, 500, 100 }, "Start")) {
@@ -317,8 +333,7 @@ int main() {
         ClearBackground(BLACK);
 
         if (app_state == APP_STATE_MAIN_MENU) {
-            DrawTexture(main_menu_bg_texture, GetScreenWidth() - main_menu_bg_texture.width, GetScreenHeight() - main_menu_bg_texture.height, WHITE);
-            main_menu_update(app_state);
+            main_menu_update(app_state, main_menu_bg_texture);
 
         } else if (app_state == APP_STATE_SIMULATION) {
             simulation_update(ui_state, fluid);
