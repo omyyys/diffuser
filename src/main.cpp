@@ -106,6 +106,12 @@ typedef enum {
 
 } App_State;
 
+typedef struct {
+    bool diffusion_help;
+    bool viscosity_help;
+    
+} Help_Icons_State;
+
 void ui_state_init(UI_State& state) {
     state.resolution_index = 2; 
     state.nx = resolutions[state.resolution_index];
@@ -183,12 +189,37 @@ void render(UI_State &state, Fluid &fluid) {
     if (state.blend) EndBlendMode();
 }
 
-void get_ui_input(UI_State &state, Fluid &fluid) {
+void show_help_message(Help_Icons_State &help_state) {
+    std::string message;
+
+    if (help_state.viscosity_help) {
+        message = "Viscosity is the resistance of a fluid to flow, \n\n and can roughly be characterised as its thickness. \n\n A higher viscosity will make the fluid flow slower. \n\n For example, honey has a higher viscosity than water.";
+
+    } else if (help_state.diffusion_help) {
+        message = "Diffusion is the process which causes the fluid to \n\n spread out from areas of high concentration to areas of \n\n low concentration. A higher diffusion will cause the fluid \n\n to spread out more quickly.";
+
+    } else {
+        return;
+    }
+    
+    int result = GuiMessageBox((Rectangle){ 100, 250, 600, 300 }, "Help", message.c_str(), "OK");
+    if (result != -1) help_state = {0};
+}
+
+void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
+    if (GuiButton((Rectangle){ 1020, 50, STD_FONT_SIZE, STD_FONT_SIZE }, "?")) {
+        help_state = {0};
+        help_state.viscosity_help = true;
+    }
     GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "0.1", &state.visc, 0.0, 0.1);
     fluid.viscosity = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
+    if (GuiButton((Rectangle){ 1020, 140, STD_FONT_SIZE, STD_FONT_SIZE }, "?")) {
+        help_state = {0};
+        help_state.diffusion_help = true;
+    }
     GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.01", &state.diff, 0.0, 0.01);
     fluid.diffusion = state.diff;
 
@@ -210,6 +241,8 @@ void get_ui_input(UI_State &state, Fluid &fluid) {
         GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
         state.random_splat_period = random_spawn_period_float;
     }
+
+    show_help_message(help_state);
 }
 
 void draw_info(UI_State state) {
@@ -270,7 +303,7 @@ void handle_input(UI_State &state, Fluid &fluid) {
     }
 }
 
-void simulation_update(UI_State &ui_state, Fluid &fluid) {
+void simulation_update(UI_State &ui_state, Help_Icons_State &help_state, Fluid &fluid) {
     ui_state.mouse_prev = ui_state.mouse;
     ui_state.mouse = GetMousePosition();
 
@@ -289,7 +322,7 @@ void simulation_update(UI_State &ui_state, Fluid &fluid) {
     }
 
     render(ui_state, fluid);
-    get_ui_input(ui_state, fluid);
+    get_ui_input(ui_state, help_state, fluid);
     handle_input(ui_state, fluid);
     draw_info(ui_state);
 }
@@ -314,6 +347,8 @@ int main() {
 
     App_State app_state = APP_STATE_MAIN_MENU;
 
+    Help_Icons_State help_icons_state = {0};
+
     Fluid fluid(ui_state.nx, ui_state.diff, ui_state.visc, 1.0/FPS);
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
@@ -322,9 +357,7 @@ int main() {
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
 
-    Image main_menu_bg = LoadImage("menu_bg.png");
-    Texture2D main_menu_bg_texture = LoadTextureFromImage(main_menu_bg);
-    UnloadImage(main_menu_bg);
+    Texture2D main_menu_bg = LoadTexture("menu_bg.png");
 
     while (!WindowShouldClose()) {
         normalise_window_size();
@@ -333,10 +366,10 @@ int main() {
         ClearBackground(BLACK);
 
         if (app_state == APP_STATE_MAIN_MENU) {
-            main_menu_update(app_state, main_menu_bg_texture);
+            main_menu_update(app_state, main_menu_bg);
 
         } else if (app_state == APP_STATE_SIMULATION) {
-            simulation_update(ui_state, fluid);
+            simulation_update(ui_state, help_icons_state, fluid);
         }
 
         EndDrawing();
