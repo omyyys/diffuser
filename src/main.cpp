@@ -28,6 +28,7 @@ constexpr int COLOUR_CHANGE_PERIOD = 4;
 constexpr double BASE_FADE = 3e-4;
 
 constexpr int STD_FONT_SIZE = 20;
+constexpr int HELP_ICON_FONT_SIZE = 15;
 constexpr int MAIN_MENU_TITLE_SIZE = 100;
 constexpr int MAIN_MENU_STD_FONT_SIZE = 40;
 
@@ -109,6 +110,8 @@ typedef enum {
 typedef struct {
     bool diffusion_help;
     bool viscosity_help;
+    bool blending_help;
+    bool spawn_interval_help;
     
 } Help_Icons_State;
 
@@ -169,6 +172,10 @@ bool mouse_is_in_window(Vector2 mouse_pos, int scale) {
             mouse_pos.y >= 0 && mouse_pos.y <= HEIGHT - scale);
 }
 
+void gui_set_font_size(int size) {
+    GuiSetStyle(DEFAULT, TEXT_SIZE, size);
+}
+
 void render(UI_State &state, Fluid &fluid) {
     if (state.rendering_field < 0) {
         state.rendering_field = (FieldType) (FIELDS_COUNT-1);
@@ -198,6 +205,12 @@ void show_help_message(Help_Icons_State &help_state) {
     } else if (help_state.diffusion_help) {
         message = "Diffusion is the process which causes the fluid to \n\n spread out from areas of high concentration to areas of \n\n low concentration. A higher diffusion will cause the fluid \n\n to spread out more quickly.";
 
+    } else if (help_state.blending_help) {
+        message = "Additive blending adds the RGB components of any \n\n overlapping colours. This has the effect of making parts \n\n of the fluid with a high concentration appear brighter.";
+
+    } else if (help_state.spawn_interval_help) {
+        message = "The spawn interval is the time in frames between each \n\n splat of fluid, if auto mode is selected. For example, setting \n\n A lower interval will cause the fluid to spawn more \n\n frequently.";
+
     } else {
         return;
     }
@@ -206,20 +219,27 @@ void show_help_message(Help_Icons_State &help_state) {
     if (result != -1) help_state = {0};
 }
 
+void draw_help_icon(float x_pos, float y_pos, float size, Help_Icons_State &help_state, bool &help_state_field) {
+    gui_set_font_size(HELP_ICON_FONT_SIZE);
+    if (GuiButton((Rectangle){ x_pos, y_pos, size, size }, "?")) {
+        help_state = {0};
+        help_state_field = true;
+    }
+    gui_set_font_size(STD_FONT_SIZE);
+}
+
 void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-    if (GuiButton((Rectangle){ 1020, 50, STD_FONT_SIZE, STD_FONT_SIZE }, "?")) {
-        help_state = {0};
-        help_state.viscosity_help = true;
-    }
+
+    draw_help_icon(1020, 50, STD_FONT_SIZE, help_state, help_state.viscosity_help);
+
     GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "0.1", &state.visc, 0.0, 0.1);
     fluid.viscosity = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
-    if (GuiButton((Rectangle){ 1020, 140, STD_FONT_SIZE, STD_FONT_SIZE }, "?")) {
-        help_state = {0};
-        help_state.diffusion_help = true;
-    }
+
+    draw_help_icon(1020, 140, STD_FONT_SIZE, help_state, help_state.diffusion_help);
+
     GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.01", &state.diff, 0.0, 0.01);
     fluid.diffusion = state.diff;
 
@@ -227,6 +247,9 @@ void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &state.colour);
 
     DrawText("Blending", 920, 550, STD_FONT_SIZE, WHITE);
+
+    draw_help_icon(1015, 550, STD_FONT_SIZE, help_state, help_state.blending_help);
+
     GuiCheckBox((Rectangle) { 1120, 550, 20, 20 }, NULL, &state.blend);
 
     DrawText("Auto Colours", 920, 600, STD_FONT_SIZE, WHITE);
@@ -237,7 +260,10 @@ void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
 
     if (state.random_spawn) {
         float random_spawn_period_float = state.random_splat_period;
-        DrawText("Spawn Interval (Frames)", 920, 700, STD_FONT_SIZE, WHITE);
+        DrawText("Spawn Interval", 920, 700, STD_FONT_SIZE, WHITE);
+
+        draw_help_icon(1085, 700, STD_FONT_SIZE, help_state, help_state.spawn_interval_help);
+
         GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
         state.random_splat_period = random_spawn_period_float;
     }
@@ -332,7 +358,7 @@ void main_menu_update(App_State &app_state, Texture bg_texture) {
     DrawText("diffuser", 100, 100, MAIN_MENU_TITLE_SIZE, WHITE);
 
     if (GuiButton((Rectangle){ 500, 300, 500, 100 }, "Start")) {
-        GuiSetStyle(DEFAULT, TEXT_SIZE, STD_FONT_SIZE);
+        gui_set_font_size(STD_FONT_SIZE);
         app_state = APP_STATE_SIMULATION;
     }
 
@@ -353,7 +379,7 @@ int main() {
 
     SetConfigFlags(FLAG_MSAA_4X_HINT); 
     InitWindow(WIDTH + GUI_WIDTH, HEIGHT, "Diffuser");
-    GuiSetStyle(DEFAULT, TEXT_SIZE, MAIN_MENU_STD_FONT_SIZE); 
+    gui_set_font_size(MAIN_MENU_STD_FONT_SIZE);
     SetTargetFPS(FPS);
     SetExitKey(KEY_NULL);
 
