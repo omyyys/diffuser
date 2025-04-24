@@ -209,7 +209,7 @@ void show_help_message(Help_Icons_State &help_state) {
         message = "Additive blending adds the RGB components of any \n\n overlapping colours. This has the effect of making parts \n\n of the fluid with a high concentration appear brighter.";
 
     } else if (help_state.spawn_interval_help) {
-        message = "The spawn interval is the time in frames between each \n\n splat of fluid, if auto mode is selected. For example, setting \n\n A lower interval will cause the fluid to spawn more \n\n frequently.";
+        message = "The spawn interval is the time in frames between each \n\n splat of fluid, if auto mode is selected. For example, setting \n\n a lower interval will cause the fluid to spawn more \n\n frequently.";
 
     } else {
         return;
@@ -230,27 +230,21 @@ void draw_help_icon(float x_pos, float y_pos, float size, Help_Icons_State &help
 
 void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     DrawText("Viscosity", 920, 50, STD_FONT_SIZE, WHITE);
-
-    draw_help_icon(1020, 50, STD_FONT_SIZE, help_state, help_state.viscosity_help);
-
     GuiSlider((Rectangle) { 920, 80, 200, 25 }, "0", "0.1", &state.visc, 0.0, 0.1);
+    draw_help_icon(1020, 50, STD_FONT_SIZE, help_state, help_state.viscosity_help);
     fluid.viscosity = state.visc;
 
     DrawText("Diffusion", 920, 140, STD_FONT_SIZE, WHITE);
-
-    draw_help_icon(1020, 140, STD_FONT_SIZE, help_state, help_state.diffusion_help);
-
     GuiSlider((Rectangle) { 920, 170, 200, 25 }, "0", "0.01", &state.diff, 0.0, 0.01);
+    draw_help_icon(1020, 140, STD_FONT_SIZE, help_state, help_state.diffusion_help);
     fluid.diffusion = state.diff;
 
     DrawText("Colour", 920, 250, STD_FONT_SIZE, WHITE);
     GuiColorPicker((Rectangle) { 920, 280, 200, 200 }, NULL, &state.colour);
 
     DrawText("Blending", 920, 550, STD_FONT_SIZE, WHITE);
-
-    draw_help_icon(1015, 550, STD_FONT_SIZE, help_state, help_state.blending_help);
-
     GuiCheckBox((Rectangle) { 1120, 550, 20, 20 }, NULL, &state.blend);
+    draw_help_icon(1015, 550, STD_FONT_SIZE, help_state, help_state.blending_help);
 
     DrawText("Auto Colours", 920, 600, STD_FONT_SIZE, WHITE);
     GuiCheckBox((Rectangle) { 1120, 600, 20, 20 }, NULL, &state.colour_change);
@@ -261,10 +255,9 @@ void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     if (state.random_spawn) {
         float random_spawn_period_float = state.random_splat_period;
         DrawText("Spawn Interval", 920, 700, STD_FONT_SIZE, WHITE);
+        GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
 
         draw_help_icon(1085, 700, STD_FONT_SIZE, help_state, help_state.spawn_interval_help);
-
-        GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
         state.random_splat_period = random_spawn_period_float;
     }
 
@@ -274,17 +267,21 @@ void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
 void draw_info(UI_State state) {
     DrawText(TextFormat("grid resolution: %s", resolution_to_description(state.nx).c_str()), 20, 20, STD_FONT_SIZE, WHITE);
 
-    if (state.rendering_field == DENSITY) {
-        DrawText("rendering density", 20, 50, STD_FONT_SIZE, WHITE);
+    switch (state.rendering_field) {
+        case DENSITY:
+            DrawText("rendering density", 20, 50, STD_FONT_SIZE, WHITE);
+            break;
 
-    } else if (state.rendering_field == VELOCITY) {
-        DrawText("rendering velocity", 20, 50, STD_FONT_SIZE, WHITE);
+        case VELOCITY:
+            DrawText("rendering velocity", 20, 50, STD_FONT_SIZE, WHITE);
+            break;
 
-    } else if (state.rendering_field == VORTICITY) {
-        DrawText("rendering vorticity", 20, 50, STD_FONT_SIZE, WHITE);
+        case VORTICITY:
+            DrawText("rendering vorticity", 20, 50, STD_FONT_SIZE, WHITE);
+            break;
 
-    } else {
-        DrawText(TextFormat("error: field enum not exhausted: %d", state.rendering_field), 20, 50, STD_FONT_SIZE, WHITE);
+        default: 
+            DrawText(TextFormat("error: field enum not exhausted: %d", state.rendering_field), 20, 50, STD_FONT_SIZE, WHITE);
     }
 
     if (state.paused) DrawText("paused", 20, 80, STD_FONT_SIZE, WHITE);
@@ -309,6 +306,7 @@ void handle_input(UI_State &state, Fluid &fluid) {
     }
 
     if (IsKeyPressed(KEY_C)) fluid.reset();
+    if (IsKeyPressed(KEY_ESCAPE)) toggle_pause(state);
 
     if (IsKeyPressed(KEY_R)) {
         state.resolution_index = resolution_next_index(state.resolution_index);
@@ -322,10 +320,6 @@ void handle_input(UI_State &state, Fluid &fluid) {
 
     } else if (IsKeyPressed(KEY_LEFT)) {
         state.rendering_field = field_type_prev(state.rendering_field);
-    }
-
-    if (IsKeyPressed(KEY_ESCAPE)) {
-        toggle_pause(state);
     }
 }
 
