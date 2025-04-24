@@ -41,6 +41,8 @@ constexpr int MAX_HUE = 360;
 constexpr float SATURATION = 1;
 constexpr float BRIGHTNESS = 0.6;
 
+constexpr float RANDOM_SPAWN_INTENSITY = 100.0;
+
 constexpr Color COLOUR_DEF = {.r = 65, .g = 70, .b = 186, .a = 255};
 
 constexpr int resolutions[] = { 80, 100, 160, 200 };
@@ -90,7 +92,7 @@ typedef struct {
     bool blend;
     bool colour_change;
     bool random_spawn;
-    int random_splat_period;
+    int random_spawn_period;
     bool paused;
     FieldType rendering_field;
 
@@ -125,7 +127,7 @@ void ui_state_init(UI_State& state) {
     state.blend = true;
     state.colour_change = false; 
     state.random_spawn = false; 
-    state.random_splat_period = FPS;
+    state.random_spawn_period = FPS;
     state.paused = false;
     state.rendering_field = DENSITY;
 
@@ -143,13 +145,14 @@ double rand_double(double start, double end) {
     return translate_value(rand(), 0, RAND_MAX, start, end);
 }
 
-void random_spawn(Fluid &fluid, int splats) {
-    for (int i = 0; i < splats; i++) {
+void random_spawn(Fluid &fluid, int no_of_spawns) {
+    for (int i = 0; i < no_of_spawns; i++) {
         int index_x = GetRandomValue(3, fluid.nx - 3); 
         int index_y = GetRandomValue(3, fluid.nx - 3); 
 
-        fluid.add_density(index_x, index_y, rand_double(-100, 100));
-        fluid.add_velocity(index_x, index_y, rand_double(-100, 100), rand_double(-100, 100));
+        fluid.add_density(index_x, index_y, rand_double(-RANDOM_SPAWN_INTENSITY, RANDOM_SPAWN_INTENSITY));
+        fluid.add_velocity(index_x, index_y, rand_double(-RANDOM_SPAWN_INTENSITY, RANDOM_SPAWN_INTENSITY), 
+                                                rand_double(-RANDOM_SPAWN_INTENSITY, RANDOM_SPAWN_INTENSITY));
     }
 }
 
@@ -253,12 +256,12 @@ void get_ui_input(UI_State &state, Help_Icons_State &help_state, Fluid &fluid) {
     GuiCheckBox((Rectangle) { 1120, 650, 20, 20 }, NULL, &state.random_spawn);
 
     if (state.random_spawn) {
-        float random_spawn_period_float = state.random_splat_period;
+        float random_spawn_period_float = state.random_spawn_period;
         DrawText("Spawn Interval", 920, 700, STD_FONT_SIZE, WHITE);
         GuiSlider((Rectangle) { 920, 730, 200, 25 }, "30", "240", &random_spawn_period_float, 30, 240);
 
         draw_help_icon(1085, 700, STD_FONT_SIZE, help_state, help_state.spawn_interval_help);
-        state.random_splat_period = random_spawn_period_float;
+        state.random_spawn_period = random_spawn_period_float;
     }
 
     show_help_message(help_state);
@@ -337,7 +340,7 @@ void simulation_update(UI_State &ui_state, Help_Icons_State &help_state, Fluid &
         ui_state.colour = get_colour(ui_state.timesteps); 
     }
 
-    if (ui_state.random_spawn && ui_state.timesteps % ui_state.random_splat_period == 0) {
+    if (ui_state.random_spawn && ui_state.timesteps % ui_state.random_spawn_period == 0) {
         random_spawn(fluid, ui_state.nx);
     }
 

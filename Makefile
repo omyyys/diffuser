@@ -1,8 +1,13 @@
-CXX := g++
-CXXFLAGS := -ggdb -Wall -Wextra -Wno-missing-field-initializers -std=c++20 -DNDEBUG
-OPTFLAGS := -Ofast -flto -funroll-loops -fno-signed-zeros -fno-trapping-math \
-             -fassociative-math -freciprocal-math -fno-math-errno \
-             -mtune=native -march=native -fno-math-errno
+CXX := clang++
+CXXFLAGS := -Wall -Wextra -Wno-missing-field-initializers -std=c++20
+OPTFLAGS := -O3 -flto=thin -ffast-math -fstrict-aliasing -fomit-frame-pointer \
+             -funroll-loops -fvectorize -fslp-vectorize \
+             -march=native -mtune=native \
+             -fstrict-enums -fstrict-vtable-pointers \
+             -fno-exceptions -fno-rtti \
+             -ffp-contract=fast -fno-rounding-math \
+             -mllvm -inline-threshold=1000 \
+             -mllvm -enable-unroll-and-jam=true
 
 SRC_DIR := src
 INC_DIR := include
