@@ -79,7 +79,7 @@ FieldType field_type_next(FieldType current) {
 }
 
 FieldType field_type_prev(FieldType current) {
-    return (FieldType) ((current - 1) % FIELDS_COUNT);
+    return (FieldType) ((current - 1 + FIELDS_COUNT) % FIELDS_COUNT);
 }
 
 typedef struct {
