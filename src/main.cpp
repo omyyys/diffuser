@@ -1,6 +1,4 @@
-// Uses Raylib 5.5
-
-// TODO: Help icons for info about the simulation
+// Uses Raylib 5.5, Raygui 3.0, and C++17
 
 #include <cstdio>
 #include <cstdlib>
@@ -292,7 +290,7 @@ void draw_info(UI_State state) {
     DrawText("arrow keys to switch field", 20, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
     DrawText("c to clear screen", 20, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
     DrawText("r to change grid resolution", 320, GetScreenHeight() - 80, STD_FONT_SIZE, WHITE);
-    DrawText("esc to pause", 320, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
+    DrawText("esc to toggle pause", 320, GetScreenHeight() - 50, STD_FONT_SIZE, WHITE);
 
     DrawFPS(GetScreenWidth() - 100, 10);
 }
