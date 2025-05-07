@@ -99,6 +99,7 @@ ScalarField ScalarField::operator-(ScalarField b) {
     return result;
 }
 
+// Set the boundaries (the values on the edges) of the field to a given value bnd_val. The default is 0.0.
 void ScalarField::set_bounds(double bnd_val) {
     if (rows == 0 || cols == 0) return;
 

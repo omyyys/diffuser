@@ -316,7 +316,7 @@ void handle_input(UI_State &state, Fluid &fluid) {
         fluid = Fluid(state.nx, state.diff, state.visc, 1.0/FPS);
     }
 
-    if (IsKeyPressed(KEY_RIGHT)) {
+    if (IsKeyPressed(KEY_RIGHT)) { // Switch field type
         state.rendering_field = field_type_next(state.rendering_field);
 
     } else if (IsKeyPressed(KEY_LEFT)) {

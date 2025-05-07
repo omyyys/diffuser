@@ -1,3 +1,5 @@
+// Header definition file for solver.cpp
+
 #include <cmath>
 #include <cstdio>
 #include <vector>
