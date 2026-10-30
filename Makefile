@@ -13,7 +13,7 @@ SRC_DIR := src
 INC_DIR := include
 BIN := build/diffuser
 
-RAYLIB_DIR := ./raylib-macos/lib
+RAYLIB_DIR := ./raylib/lib
 LDFLAGS := -L$(RAYLIB_DIR) -Wl,-rpath,$(RAYLIB_DIR)
 LDLIBS := -lraylib -lm
 
