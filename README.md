@@ -4,7 +4,7 @@
 
 ## Building
 
-The project uses **Clang**, **Make** and **C++20**. Raylib 5.5 and raygui are included in the repository.
+The project uses Clang and C++20. Raylib 5.5 and raygui are included in the repository.
 
 On Linux, you can use the bundled libraries in `raylib/lib`:
 
@@ -15,11 +15,11 @@ make RAYLIB_DIR=./raylib/lib
 ./build/diffuser
 ```
 
-On macOS, provide a compatible Raylib build in `raylib/lib`, or set `RAYLIB_DIR` to its library directory. The Makefile uses Clang-specific optimization flags, so a compatible toolchain is required.
+The Makefile requires a Clang-compatible toolchain.
 
 ## Usage
 
-Select **Start** from the main menu. Hold the **left mouse button** and drag across the canvas to introduce fluid and movement.
+Hold the **left mouse button** and drag across the canvas to introduce fluid and movement.
 
 | Control | Action |
 | --- | --- |
@@ -30,8 +30,6 @@ Select **Start** from the main menu. Hold the **left mouse button** and drag acr
 | `Esc` | Pause or resume |
 
 The panel on the right lets you adjust **viscosity** and **diffusion**, choose a **colour**, and toggle **additive blending**. **Auto Colours** changes the colour over time, while **Auto Spawn** periodically introduces fluid at random positions; its interval can also be adjusted.
-
-Close the application window to exit the simulation.
 
 ## Screenshots
 
